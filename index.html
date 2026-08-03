@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carcará Tecnologia - Desenvolvimento de Software Sob Medida</title>
-    <meta name="description" content="Soluções inovadoras que elevam seu negócio a outro patamar. Desenvolvimento web, aplicativos mobile, sistemas personalizados e consultoria em TI.">
+    <title>Carcará Tecnologia | Software sob medida para empresas</title>
+    <meta name="description" content="Projetamos e desenvolvemos sistemas web, aplicativos e automações para empresas que precisam escalar com tecnologia confiável.">
     
     <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -24,7 +24,9 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container">
-            <a class="navbar-brand" href="#home"><img src="src/images/logo.png" alt="Logo Carcará Tecnologia" class="logo-img"></span></a>
+            <a class="navbar-brand" href="#home" aria-label="Carcará Tecnologia">
+                <img src="src/images/logo.png" alt="Carcará Tecnologia" class="logo-img">
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -40,13 +42,16 @@
                         <a class="nav-link" href="#sobre">Sobre</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#portfolio">Portfólio</a>
+                        <a class="nav-link" href="#processo">Processo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#portfolio">Cases</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#contato">Contato</a>
                     </li>
                 </ul>
-                <a href="#contato" class="btn btn-primary ms-lg-3">Solicitar Orçamento</a>
+                <a href="#contato" class="btn btn-primary ms-lg-3">Agendar diagnóstico</a>
             </div>
         </div>
     </nav>
@@ -56,9 +61,27 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6 hero-content">
-                    <h1>Desenvolvimento de Software Sob Medida</h1>
-                    <p>Soluções inovadoras que elevam seu negócio a outro patamar</p>
-                    <a href="#contato" class="btn btn-primary btn-lg">Fale com nossos especialistas</a>
+                    <span class="eyebrow">Software house no Cariri para empresas em crescimento</span>
+                    <h1>Transformamos processos complexos em sistemas simples de operar.</h1>
+                    <p>Desenvolvemos plataformas web, aplicativos e automações com foco em eficiência operacional, segurança e evolução contínua.</p>
+                    <div class="hero-actions">
+                        <a href="#contato" class="btn btn-primary btn-lg">Agendar diagnóstico</a>
+                        <a href="#portfolio" class="btn btn-outline-light btn-lg">Ver cases</a>
+                    </div>
+                    <div class="hero-metrics" aria-label="Indicadores da Carcará Tecnologia">
+                        <div>
+                            <strong>40%</strong>
+                            <span>menos retrabalho em operações automatizadas</span>
+                        </div>
+                        <div>
+                            <strong>+25</strong>
+                            <span>projetos digitais planejados e entregues</span>
+                        </div>
+                        <div>
+                            <strong>90 dias</strong>
+                            <span>para tirar uma primeira versão do papel</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="hero-image text-center">
@@ -72,15 +95,17 @@
     <!-- Serviços -->
     <section id="servicos" class="services">
         <div class="container">
-            <h2 class="section-title">Nossos Serviços</h2>
+            <span class="section-kicker">O que entregamos</span>
+            <h2 class="section-title">Tecnologia aplicada ao resultado do negócio</h2>
             <div class="row">
                 <div class="col-md-6 col-lg-3 mb-4">
                     <div class="service-card">
                         <div class="service-icon">
                             <i class="fas fa-laptop-code"></i>
                         </div>
-                        <h3>Dev Web</h3>
-                        <p>Criamos sites e sistemas web responsivos, modernos e de alta performance para atender às necessidades do seu negócio.</p>
+                        <h3>Sistemas Web</h3>
+                        <p>Portais, ERPs, CRMs e plataformas internas responsivas, seguras e preparadas para crescer com a operação.</p>
+                        <span class="service-tag">React, Node.js, APIs</span>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3 mb-4">
@@ -89,7 +114,8 @@
                             <i class="fas fa-mobile-alt"></i>
                         </div>
                         <h3>Aplicativos Mobile</h3>
-                        <p>Desenvolvemos aplicativos nativos e híbridos para iOS e Android, proporcionando a melhor experiência do usuário.</p>
+                        <p>Apps para clientes, equipes externas e operações de campo com experiência fluida e integração com seus sistemas.</p>
+                        <span class="service-tag">Android, iOS, integração</span>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3 mb-4">
@@ -97,8 +123,9 @@
                         <div class="service-icon">
                             <i class="fas fa-cogs"></i>
                         </div>
-                        <h3>Sistemas Personalizados</h3>
-                        <p>Soluções sob medida para automatizar processos, aumentar produtividade e otimizar a gestão da sua empresa.</p>
+                        <h3>Automação de Processos</h3>
+                        <p>Fluxos digitais para reduzir trabalho manual, padronizar tarefas críticas e gerar dados confiáveis para gestão.</p>
+                        <span class="service-tag">Backoffice, dashboards</span>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3 mb-4">
@@ -106,8 +133,9 @@
                         <div class="service-icon">
                             <i class="fas fa-chart-line"></i>
                         </div>
-                        <h3>Consultoria em TI</h3>
-                        <p>Análise e planejamento estratégico de tecnologia para alavancar seus resultados e potencializar seu crescimento.</p>
+                        <h3>Consultoria Técnica</h3>
+                        <p>Diagnóstico de sistemas, desenho de arquitetura, priorização de roadmap e apoio técnico para decisões de produto.</p>
+                        <span class="service-tag">Arquitetura, roadmap</span>
                     </div>
                 </div>
             </div>
@@ -117,17 +145,18 @@
     <!-- Sobre -->
     <section id="sobre" class="about">
         <div class="container">
-            <h2 class="section-title">Sobre a Empresa</h2>
+            <span class="section-kicker">Sobre a Carcará</span>
+            <h2 class="section-title">Parceiros técnicos para decisões importantes</h2>
             <div class="row about-content">
                 <div class="col-lg-6 about-text">
-                    <h3>Transformando ideias em soluções digitais</h3>
-                    <p>A Carcará Tecnologia é uma software house especializada em desenvolvimento de soluções personalizadas para empresas de todos os portes. Com uma equipe de especialistas altamente qualificados, entregamos projetos que realmente fazem a diferença para nossos clientes.</p>
+                    <h3>Da descoberta ao suporte, com clareza em cada etapa</h3>
+                    <p>A Carcará Tecnologia atua como parceira de empresas que precisam modernizar processos, lançar produtos digitais ou integrar sistemas existentes. Nosso trabalho combina visão de negócio, engenharia de software e acompanhamento próximo.</p>
                     
                     <h4>Nossa Missão</h4>
-                    <p>Desenvolver soluções tecnológicas inovadoras que impulsionem o crescimento e a eficiência dos negócios de nossos clientes.</p>
+                    <p>Desenvolver soluções tecnológicas confiáveis que aumentem eficiência, reduzam gargalos e apoiem o crescimento sustentável dos clientes.</p>
                     
                     <h4>Nossa Visão</h4>
-                    <p>Ser referência em desenvolvimento de software personalizado, reconhecida pela excelência, inovação e resultados entregues.</p>
+                    <p>Ser referência regional em desenvolvimento de software sob medida, reconhecida por qualidade técnica, transparência e resultado mensurável.</p>
                 </div>
                 <div class="col-lg-6">
                     <h4>Nossos Valores</h4>
@@ -162,10 +191,49 @@
         </div>
     </section>
 
+    <!-- Processo -->
+    <section id="processo" class="process">
+        <div class="container">
+            <span class="section-kicker">Como trabalhamos</span>
+            <h2 class="section-title">Um processo claro reduz risco e acelera entrega</h2>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="process-step">
+                        <span>01</span>
+                        <h3>Diagnóstico</h3>
+                        <p>Entendemos o problema, os usuários, os dados disponíveis e os indicadores que definem sucesso.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="process-step">
+                        <span>02</span>
+                        <h3>Planejamento</h3>
+                        <p>Priorizamos funcionalidades, desenhamos a arquitetura e organizamos uma primeira versão viável.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="process-step">
+                        <span>03</span>
+                        <h3>Desenvolvimento</h3>
+                        <p>Construímos em ciclos curtos, com validações frequentes e atenção à segurança e manutenção.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="process-step">
+                        <span>04</span>
+                        <h3>Evolução</h3>
+                        <p>Acompanhamos uso real, corrigimos gargalos e evoluímos o produto conforme novas necessidades.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Portfólio -->
     <section id="portfolio" class="portfolio">
         <div class="container">
-            <h2 class="section-title">Nosso Portfólio</h2>
+            <span class="section-kicker">Cases</span>
+            <h2 class="section-title">Soluções para operações que precisam escalar</h2>
             <div class="row">
                 <div class="col-md-6 col-lg-4">
                     <div class="portfolio-item">
@@ -204,7 +272,8 @@
     <!-- Depoimentos -->
     <section class="testimonials">
         <div class="container">
-            <h2 class="section-title">O Que Nossos Clientes Dizem</h2>
+            <span class="section-kicker">Depoimentos</span>
+            <h2 class="section-title">O que clientes destacam no trabalho conosco</h2>
             <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
                 <div class="carousel-inner">
                     <div class="carousel-item active">
@@ -274,29 +343,49 @@
         </div>
     </section>
 
+    <!-- CTA -->
+    <section class="final-cta">
+        <div class="container">
+            <div class="final-cta-box">
+                <div>
+                    <span class="eyebrow">Próximo passo</span>
+                    <h2>Tem um processo caro, manual ou travado por planilhas?</h2>
+                    <p>Agende uma conversa para avaliarmos oportunidades de automação, integração ou desenvolvimento sob medida.</p>
+                </div>
+                <a href="#contato" class="btn btn-primary btn-lg">Quero conversar</a>
+            </div>
+        </div>
+    </section>
+
     <!-- Contato -->
     <section id="contato" class="contact">
         <div class="container">
-            <h2 class="section-title">Entre em Contato</h2>
+            <span class="section-kicker">Contato</span>
+            <h2 class="section-title">Conte sobre o desafio da sua empresa</h2>
             <div class="row">
                 <div class="col-lg-8">
                     <div class="contact-form">
                         <form id="contactForm">
                             <div class="row">
                                 <div class="col-md-6">
-                                    <input type="text" class="form-control" id="name" placeholder="Seu nome" required>
+                                    <label for="name" class="form-label">Nome</label>
+                                    <input type="text" class="form-control" id="name" placeholder="Seu nome" autocomplete="name" required>
                                     <div class="invalid-feedback">Por favor, insira seu nome.</div>
                                 </div>
                                 <div class="col-md-6">
-                                    <input type="email" class="form-control" id="email" placeholder="Seu e-mail" required>
+                                    <label for="email" class="form-label">E-mail</label>
+                                    <input type="email" class="form-control" id="email" placeholder="seu@email.com" autocomplete="email" required>
                                     <div class="invalid-feedback">Por favor, insira um e-mail válido.</div>
                                 </div>
                             </div>
-                            <input type="text" class="form-control" id="subject" placeholder="Assunto" required>
+                            <label for="subject" class="form-label">Assunto</label>
+                            <input type="text" class="form-control" id="subject" placeholder="Ex.: Automatizar controle de pedidos" required>
                             <div class="invalid-feedback">Por favor, insira um assunto.</div>
-                            <textarea class="form-control" id="message" rows="5" placeholder="Sua mensagem" required></textarea>
+                            <label for="message" class="form-label">Mensagem</label>
+                            <textarea class="form-control" id="message" rows="5" placeholder="Descreva o cenário atual e o que você deseja melhorar" required></textarea>
                             <div class="invalid-feedback">Por favor, insira sua mensagem.</div>
-                            <button type="submit" class="btn btn-primary">Enviar Mensagem</button>
+                            <button type="submit" class="btn btn-primary">Enviar mensagem</button>
+                            <p class="form-note">Retornamos em até 1 dia útil.</p>
                         </form>
                     </div>
                 </div>
@@ -357,10 +446,9 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-4 mb-4">
-                    <a class="navbar-brand" href="#home"><img src="src/images/logo_1.png" alt="Logo Carcará Tecnologia" class="logo-img"></span></a>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
+                    <a class="footer-brand" href="#home" aria-label="Carcará Tecnologia">
+                        <img src="src/images/logo_1.png" alt="Carcará Tecnologia" class="logo-img">
+                    </a>
                     <p>Desenvolvemos soluções tecnológicas inovadoras que impulsionam o crescimento e a eficiência dos negócios de nossos clientes.</p>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-facebook-f"></i></a>
@@ -376,7 +464,8 @@
                             <li><a href="#home">Home</a></li>
                             <li><a href="#servicos">Serviços</a></li>
                             <li><a href="#sobre">Sobre</a></li>
-                            <li><a href="#portfolio">Portfólio</a></li>
+                            <li><a href="#processo">Processo</a></li>
+                            <li><a href="#portfolio">Cases</a></li>
                             <li><a href="#contato">Contato</a></li>
                         </ul>
                     </div>
@@ -404,7 +493,7 @@
                 </div>
             </div>
             <div class="copyright">
-                <p>&copy; 2023 Carcará Tecnologia. Todos os direitos reservados.</p>
+                <p>&copy; <span id="currentYear">2026</span> Carcará Tecnologia. Todos os direitos reservados.</p>
             </div>
         </div>
     </footer>

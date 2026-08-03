@@ -1,6 +1,8 @@
 // ===== NAVBAR SCROLL EFFECT =====
 window.addEventListener('scroll', function() {
     const navbar = document.querySelector('.navbar');
+    if (!navbar) return;
+
     if (window.scrollY > 50) {
         navbar.classList.add('scrolled');
     } else {
@@ -11,13 +13,13 @@ window.addEventListener('scroll', function() {
 // ===== SMOOTH SCROLLING PARA LINKS INTERNOS =====
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        
         const targetId = this.getAttribute('href');
         if (targetId === '#') return;
         
         const targetElement = document.querySelector(targetId);
         if (targetElement) {
+            e.preventDefault();
+
             window.scrollTo({
                 top: targetElement.offsetTop - 80,
                 behavior: 'smooth'
@@ -25,7 +27,6 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             
             // Fechar menu mobile após clique
             const navbarToggler = document.querySelector('.navbar-toggler');
-            const navbarCollapse = document.querySelector('.navbar-collapse');
             if (navbarToggler && !navbarToggler.classList.contains('collapsed')) {
                 navbarToggler.click();
             }
@@ -34,51 +35,55 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 // ===== VALIDAÇÃO DO FORMULÁRIO =====
-document.getElementById('contactForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Limpar validações anteriores
-    clearValidation();
-    
-    const name = document.getElementById('name');
-    const email = document.getElementById('email');
-    const subject = document.getElementById('subject');
-    const message = document.getElementById('message');
-    
-    let isValid = true;
-    
-    // Validação do nome
-    if (!name.value.trim()) {
-        showError(name, 'Por favor, insira seu nome.');
-        isValid = false;
-    }
-    
-    // Validação do email
-    if (!email.value.trim()) {
-        showError(email, 'Por favor, insira seu e-mail.');
-        isValid = false;
-    } else if (!isValidEmail(email.value)) {
-        showError(email, 'Por favor, insira um e-mail válido.');
-        isValid = false;
-    }
-    
-    // Validação do assunto
-    if (!subject.value.trim()) {
-        showError(subject, 'Por favor, insira um assunto.');
-        isValid = false;
-    }
-    
-    // Validação da mensagem
-    if (!message.value.trim()) {
-        showError(message, 'Por favor, insira sua mensagem.');
-        isValid = false;
-    }
-    
-    if (isValid) {
-        // Simulação de envio do formulário
-        simulateFormSubmission();
-    }
-});
+const contactForm = document.getElementById('contactForm');
+
+if (contactForm) {
+    contactForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Limpar validações anteriores
+        clearValidation();
+
+        const name = document.getElementById('name');
+        const email = document.getElementById('email');
+        const subject = document.getElementById('subject');
+        const message = document.getElementById('message');
+
+        let isValid = true;
+
+        // Validação do nome
+        if (!name.value.trim()) {
+            showError(name, 'Por favor, insira seu nome.');
+            isValid = false;
+        }
+
+        // Validação do email
+        if (!email.value.trim()) {
+            showError(email, 'Por favor, insira seu e-mail.');
+            isValid = false;
+        } else if (!isValidEmail(email.value)) {
+            showError(email, 'Por favor, insira um e-mail válido.');
+            isValid = false;
+        }
+
+        // Validação do assunto
+        if (!subject.value.trim()) {
+            showError(subject, 'Por favor, insira um assunto.');
+            isValid = false;
+        }
+
+        // Validação da mensagem
+        if (!message.value.trim()) {
+            showError(message, 'Por favor, insira sua mensagem.');
+            isValid = false;
+        }
+
+        if (isValid) {
+            // Simulação de envio do formulário
+            simulateFormSubmission();
+        }
+    });
+}
 
 // Função para validar formato de email
 function isValidEmail(email) {
@@ -106,6 +111,11 @@ function clearValidation() {
     inputs.forEach(input => {
         input.classList.remove('is-invalid');
     });
+
+    const existingAlert = document.querySelector('.form-alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
 }
 
 // Função para simular envio do formulário
@@ -119,9 +129,13 @@ function simulateFormSubmission() {
     
     // Simular delay de rede
     setTimeout(() => {
-        // Sucesso no envio
-        alert('Mensagem enviada com sucesso! Entraremos em contato em breve.');
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success form-alert mt-3';
+        alert.setAttribute('role', 'status');
+        alert.textContent = 'Mensagem enviada com sucesso. Entraremos em contato em breve.';
+
         document.getElementById('contactForm').reset();
+        document.getElementById('contactForm').appendChild(alert);
         
         // Restaurar botão
         submitButton.innerHTML = originalText;
@@ -131,9 +145,14 @@ function simulateFormSubmission() {
 
 // ===== INICIALIZAÇÃO DO CAROUSEL =====
 document.addEventListener('DOMContentLoaded', function() {
+    const currentYear = document.getElementById('currentYear');
+    if (currentYear) {
+        currentYear.textContent = new Date().getFullYear();
+    }
+
     const myCarousel = document.querySelector('#testimonialCarousel');
     if (myCarousel) {
-        const carousel = new bootstrap.Carousel(myCarousel, {
+        new bootstrap.Carousel(myCarousel, {
             interval: 5000,
             wrap: true
         });
