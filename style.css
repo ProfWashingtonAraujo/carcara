@@ -477,6 +477,126 @@ section {
     margin-bottom: 1.5rem;
 }
 
+.project-card {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.project-card:hover,
+.project-card:focus-within {
+    border-color: rgba(249, 115, 22, 0.35);
+    box-shadow: var(--shadow-soft);
+    transform: translateY(-8px);
+}
+
+.project-card-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.project-image {
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+    object-fit: cover;
+    width: 100%;
+}
+
+.project-card-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 1.6rem;
+}
+
+.project-card-header i {
+    color: var(--primary-blue);
+    font-size: 1.35rem;
+    opacity: 0.75;
+}
+
+.project-language {
+    background: #fff7ed;
+    border-radius: 999px;
+    color: #c2410c;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 900;
+    padding: 0.35rem 0.75rem;
+}
+
+.project-card h3 {
+    color: var(--primary-blue);
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.project-card p {
+    color: var(--text-muted);
+    flex: 1;
+    margin-bottom: 1.5rem;
+}
+
+.project-actions,
+.project-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.project-actions a,
+.project-detail-button {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--medium-gray);
+    border-radius: 999px;
+    color: var(--primary-blue);
+    display: inline-flex;
+    font-size: 0.88rem;
+    font-weight: 800;
+    padding: 0.55rem 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.project-actions a:hover,
+.project-actions a:focus,
+.project-detail-button:hover,
+.project-detail-button:focus {
+    background: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: var(--white);
+}
+
+.project-modal-content {
+    border: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.project-modal-image {
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    margin-bottom: 1.5rem;
+    object-fit: cover;
+    width: 100%;
+}
+
+.project-modal-description {
+    color: var(--primary-blue);
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
 .testimonial-card {
     margin: 1rem;
 }

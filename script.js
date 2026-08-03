@@ -150,6 +150,41 @@ document.addEventListener('DOMContentLoaded', function() {
         currentYear.textContent = new Date().getFullYear();
     }
 
+    const projectDetailModal = document.getElementById('projectDetailModal');
+    if (projectDetailModal) {
+        projectDetailModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            if (!button) return;
+
+            const title = button.getAttribute('data-title') || 'Detalhes do projeto';
+            const language = button.getAttribute('data-language') || 'Projeto';
+            const image = button.getAttribute('data-image') || '';
+            const description = button.getAttribute('data-description') || '';
+            const details = button.getAttribute('data-details') || '';
+            const github = button.getAttribute('data-github') || '#';
+            const demo = button.getAttribute('data-demo');
+
+            document.getElementById('projectDetailModalLabel').textContent = title;
+            document.getElementById('projectDetailLanguage').textContent = language;
+            document.getElementById('projectDetailDescription').textContent = description;
+            document.getElementById('projectDetailText').textContent = details;
+
+            const imageElement = document.getElementById('projectDetailImage');
+            imageElement.src = image;
+            imageElement.alt = `Prévia do projeto ${title}`;
+
+            document.getElementById('projectDetailGithub').href = github;
+
+            const demoLink = document.getElementById('projectDetailDemo');
+            if (demo) {
+                demoLink.href = demo;
+                demoLink.classList.remove('d-none');
+            } else {
+                demoLink.classList.add('d-none');
+            }
+        });
+    }
+
     const myCarousel = document.querySelector('#testimonialCarousel');
     if (myCarousel) {
         new bootstrap.Carousel(myCarousel, {
@@ -180,7 +215,7 @@ const observer = new IntersectionObserver(function(entries) {
 
 // Observar elementos para animação
 document.addEventListener('DOMContentLoaded', function() {
-    const elementsToAnimate = document.querySelectorAll('.service-card, .portfolio-item, .testimonial-card');
+    const elementsToAnimate = document.querySelectorAll('.service-card, .project-card, .portfolio-item, .testimonial-card');
     elementsToAnimate.forEach(element => {
         observer.observe(element);
     });
