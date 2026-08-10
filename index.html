@@ -58,32 +58,42 @@
 
     <!-- Hero Section -->
     <section id="home" class="hero">
+        <div class="hero-particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6 hero-content">
-                    <span class="eyebrow">Software house no Cariri para empresas em crescimento</span>
-                    <h1>Transformamos processos complexos em sistemas simples de operar.</h1>
-                    <p>Desenvolvemos plataformas web, aplicativos e automações com foco em eficiência operacional, segurança e evolução contínua.</p>
-                    <div class="hero-actions">
-                        <a href="#contato" class="btn btn-primary btn-lg">Agendar diagnóstico</a>
+                    <span class="eyebrow hero-text-reveal">Software house no Cariri para empresas em crescimento</span>
+                    <h1 class="hero-text-reveal">Transformamos processos complexos em sistemas simples de operar.</h1>
+                    <p class="hero-text-reveal">Desenvolvemos plataformas web, aplicativos e automações com foco em eficiência operacional, segurança e evolução contínua.</p>
+                    <div class="hero-actions hero-text-reveal">
+                        <a href="#contato" class="btn btn-primary btn-lg btn-ripple">Agendar diagnóstico</a>
                         <a href="#portfolio" class="btn btn-outline-light btn-lg">Ver cases</a>
                     </div>
-                    <div class="hero-metrics" aria-label="Indicadores da Carcará Tecnologia">
+                    <div class="hero-metrics hero-text-reveal" aria-label="Indicadores da Carcará Tecnologia">
                         <div>
-                            <strong>40%</strong>
+                            <strong><span class="count-number" data-count="40">0</span>%</strong>
                             <span>menos retrabalho em operações automatizadas</span>
                         </div>
                         <div>
-                            <strong>+25</strong>
+                            <strong>+<span class="count-number" data-count="25">0</span></strong>
                             <span>projetos digitais planejados e entregues</span>
                         </div>
                         <div>
-                            <strong>90 dias</strong>
+                            <strong><span class="count-number" data-count="90">0</span> dias</strong>
                             <span>para tirar uma primeira versão do papel</span>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6 reveal reveal-slide-right">
                     <div class="hero-image text-center">
                         <img src="src/images/hero-illustration.jpg" alt="Ilustração de desenvolvimento de software" class="img-fluid">
                     </div>
@@ -92,13 +102,17 @@
         </div>
     </section>
 
+    <div class="wave-divider wave-flip">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#f8fafc" fill-opacity="1" d="M0,128L48,138.7C96,149,192,171,288,165.3C384,160,480,128,576,122.7C672,117,768,139,864,160C960,181,1056,203,1152,186.7C1248,171,1344,117,1392,90.7L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+    </div>
+
     <!-- Serviços -->
     <section id="servicos" class="services">
         <div class="container">
             <span class="section-kicker">O que entregamos</span>
             <h2 class="section-title">Tecnologia aplicada ao resultado do negócio</h2>
             <div class="row">
-                <div class="col-md-6 col-lg-3 mb-4">
+                <div class="col-md-6 col-lg-3 mb-4 reveal reveal-fade-up reveal-delay-1">
                     <div class="service-card">
                         <div class="service-icon">
                             <i class="fas fa-laptop-code"></i>
@@ -108,7 +122,7 @@
                         <span class="service-tag">React, Node.js, APIs</span>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3 mb-4">
+                <div class="col-md-6 col-lg-3 mb-4 reveal reveal-fade-up reveal-delay-2">
                     <div class="service-card">
                         <div class="service-icon">
                             <i class="fas fa-mobile-alt"></i>
@@ -118,7 +132,7 @@
                         <span class="service-tag">Android, iOS, integração</span>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3 mb-4">
+                <div class="col-md-6 col-lg-3 mb-4 reveal reveal-fade-up reveal-delay-3">
                     <div class="service-card">
                         <div class="service-icon">
                             <i class="fas fa-cogs"></i>
@@ -128,7 +142,7 @@
                         <span class="service-tag">Backoffice, dashboards</span>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3 mb-4">
+                <div class="col-md-6 col-lg-3 mb-4 reveal reveal-fade-up reveal-delay-4">
                     <div class="service-card">
                         <div class="service-icon">
                             <i class="fas fa-chart-line"></i>
@@ -147,8 +161,8 @@
         <div class="container">
             <span class="section-kicker">Sobre a Carcará</span>
             <h2 class="section-title">Parceiros técnicos para decisões importantes</h2>
-            <div class="row about-content">
-                <div class="col-lg-6 about-text">
+            <div class="row about-content reveal reveal-fade-up">
+                <div class="col-lg-6 about-text reveal reveal-slide-left">
                     <h3>Da descoberta ao suporte, com clareza em cada etapa</h3>
                     <p>A Carcará Tecnologia atua como parceira de empresas que precisam modernizar processos, lançar produtos digitais ou integrar sistemas existentes. Nosso trabalho combina visão de negócio, engenharia de software e acompanhamento próximo.</p>
                     
@@ -158,7 +172,7 @@
                     <h4>Nossa Visão</h4>
                     <p>Ser referência regional em desenvolvimento de software sob medida, reconhecida por qualidade técnica, transparência e resultado mensurável.</p>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6 reveal reveal-slide-right">
                     <h4>Nossos Valores</h4>
                     <ul class="values-list">
                         <li>
@@ -191,34 +205,38 @@
         </div>
     </section>
 
+    <div class="wave-divider">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none"><path fill="#f8fafc" fill-opacity="1" d="M0,128L48,138.7C96,149,192,171,288,165.3C384,160,480,128,576,122.7C672,117,768,139,864,160C960,181,1056,203,1152,186.7C1248,171,1344,117,1392,90.7L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+    </div>
+
     <!-- Processo -->
     <section id="processo" class="process">
         <div class="container">
-            <span class="section-kicker">Como trabalhamos</span>
-            <h2 class="section-title">Um processo claro reduz risco e acelera entrega</h2>
+            <span class="section-kicker reveal reveal-fade-up">Como trabalhamos</span>
+            <h2 class="section-title reveal reveal-fade-up reveal-delay-1">Um processo claro reduz risco e acelera entrega</h2>
             <div class="row g-4">
-                <div class="col-md-6 col-lg-3">
+                <div class="col-md-6 col-lg-3 reveal reveal-scale reveal-delay-1">
                     <div class="process-step">
                         <span>01</span>
                         <h3>Diagnóstico</h3>
                         <p>Entendemos o problema, os usuários, os dados disponíveis e os indicadores que definem sucesso.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3">
+                <div class="col-md-6 col-lg-3 reveal reveal-scale reveal-delay-2">
                     <div class="process-step">
                         <span>02</span>
                         <h3>Planejamento</h3>
                         <p>Priorizamos funcionalidades, desenhamos a arquitetura e organizamos uma primeira versão viável.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3">
+                <div class="col-md-6 col-lg-3 reveal reveal-scale reveal-delay-3">
                     <div class="process-step">
                         <span>03</span>
                         <h3>Desenvolvimento</h3>
                         <p>Construímos em ciclos curtos, com validações frequentes e atenção à segurança e manutenção.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3">
+                <div class="col-md-6 col-lg-3 reveal reveal-scale reveal-delay-4">
                     <div class="process-step">
                         <span>04</span>
                         <h3>Evolução</h3>
@@ -232,10 +250,10 @@
     <!-- Portfólio -->
     <section id="portfolio" class="portfolio">
         <div class="container">
-            <span class="section-kicker">Cases</span>
-            <h2 class="section-title">Soluções digitais criadas para diferentes segmentos de negócio</h2>
+            <span class="section-kicker reveal reveal-fade-up">Cases</span>
+            <h2 class="section-title reveal reveal-fade-up reveal-delay-1">Soluções digitais criadas para diferentes segmentos de negócio</h2>
             <div class="row g-4">
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/electoral-os" alt="Prévia do projeto Electoral OS" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -246,7 +264,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/vaija" alt="Prévia do projeto Vaija" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -257,7 +275,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/nexafix" alt="Prévia do projeto Nexafix" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -268,7 +286,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/stockflowpro" alt="Prévia do projeto StockFlowPro" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -279,7 +297,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/ibrcanaa" alt="Prévia do projeto Ibrcanaa" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -290,7 +308,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/snake" alt="Prévia do projeto Snake" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -301,7 +319,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/blogcraft-python" alt="Prévia do projeto BlogCraft Python" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -312,7 +330,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/login" alt="Prévia do projeto Sistema de Login" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -323,7 +341,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/VitaCare" alt="Prévia do projeto VitaCare" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -334,7 +352,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/landing_page_adv" alt="Prévia do projeto Landing Page Adv" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -345,7 +363,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/confeitaria" alt="Prévia do projeto Confeitaria" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -356,7 +374,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/landing_page" alt="Prévia do projeto Landing Page" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -367,7 +385,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/carcara" alt="Prévia do projeto Carcará" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -378,7 +396,7 @@
                         </div>
                     </article>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
                     <article class="project-card">
                         <img src="https://opengraph.githubassets.com/04a2c76/ProfWashingtonAraujo/ProfWashingtonAraujo" alt="Prévia do repositório de perfil ProfWashingtonAraujo" class="project-image" loading="lazy">
                         <div class="project-card-body">
@@ -396,9 +414,9 @@
     <!-- Depoimentos -->
     <section class="testimonials">
         <div class="container">
-            <span class="section-kicker">Depoimentos</span>
-            <h2 class="section-title">O que clientes destacam no trabalho conosco</h2>
-            <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
+            <span class="section-kicker reveal reveal-fade-up">Depoimentos</span>
+            <h2 class="section-title reveal reveal-fade-up reveal-delay-1">O que clientes destacam no trabalho conosco</h2>
+            <div id="testimonialCarousel" class="carousel slide reveal reveal-scale reveal-delay-2" data-bs-ride="carousel">
                 <div class="carousel-inner">
                     <div class="carousel-item active">
                         <div class="row justify-content-center">
@@ -470,13 +488,13 @@
     <!-- CTA -->
     <section class="final-cta">
         <div class="container">
-            <div class="final-cta-box">
+            <div class="final-cta-box reveal reveal-fade-up">
                 <div>
                     <span class="eyebrow">Próximo passo</span>
                     <h2>Tem um processo caro, manual ou travado por planilhas?</h2>
                     <p>Agende uma conversa para avaliarmos oportunidades de automação, integração ou desenvolvimento sob medida.</p>
                 </div>
-                <a href="#contato" class="btn btn-primary btn-lg">Quero conversar</a>
+                <a href="#contato" class="btn btn-primary btn-lg btn-ripple">Quero conversar</a>
             </div>
         </div>
     </section>
@@ -484,10 +502,10 @@
     <!-- Contato -->
     <section id="contato" class="contact">
         <div class="container">
-            <span class="section-kicker">Contato</span>
-            <h2 class="section-title">Conte sobre o desafio da sua empresa</h2>
+            <span class="section-kicker reveal reveal-fade-up">Contato</span>
+            <h2 class="section-title reveal reveal-fade-up reveal-delay-1">Conte sobre o desafio da sua empresa</h2>
             <div class="row">
-                <div class="col-lg-8">
+                <div class="col-lg-8 reveal reveal-slide-left">
                     <div class="contact-form">
                         <form id="contactForm">
                             <div class="row">
@@ -508,12 +526,12 @@
                             <label for="message" class="form-label">Mensagem</label>
                             <textarea class="form-control" id="message" rows="5" placeholder="Descreva o cenário atual e o que você deseja melhorar" required></textarea>
                             <div class="invalid-feedback">Por favor, insira sua mensagem.</div>
-                            <button type="submit" class="btn btn-primary">Enviar mensagem</button>
+                            <button type="submit" class="btn btn-primary btn-ripple">Enviar mensagem</button>
                             <p class="form-note">Retornamos em até 1 dia útil.</p>
                         </form>
                     </div>
                 </div>
-                <div class="col-lg-4">
+                <div class="col-lg-4 reveal reveal-slide-right">
                     <div class="contact-info">
                         <h4>Informações de Contato</h4>
                         <div class="contact-item">
@@ -555,7 +573,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row reveal reveal-fade-up">
                 <div class="col-12">
                     <div class="map-container">
                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3958.0266810851936!2d-39.33995379054273!3d-7.237795892738295!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x7a1828a38251341%3A0x8f60b1a997125595!2sR.%20Cerelino%20Quezado%20Filgueiras%20Filho%2C%20848%20-%20Lagoa%20Seca%2C%20Juazeiro%20do%20Norte%20-%20CE%2C%2063041-570!5e0!3m2!1spt-BR!2sbr!4v1760120468321!5m2!1spt-BR!2sbr" width="100%" height="400" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>

@@ -194,8 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ===== ANIMAÇÃO AO SCROLL =====
-// Observador de interseção para animações
+// ===== ANIMAÇÃO AO SCROLL (Intersection Observer) =====
 const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
@@ -206,17 +205,110 @@ const observer = new IntersectionObserver(function(entries) {
         if (entry.isIntersecting) {
             // adiciona classe ao entrar
             entry.target.classList.add('animate-in');
-        } else {
-            // remove classe ao sair para permitir re-animação quando voltar
-            entry.target.classList.remove('animate-in');
+            entry.target.classList.add('revealed');
+            
+            // Animar números se for a métrica
+            if (entry.target.classList.contains('hero-metrics') && !entry.target.classList.contains('counted')) {
+                animateNumbers();
+                entry.target.classList.add('counted');
+            }
         }
+        // Removemos o 'else' para que os elementos não sumam ao voltar o scroll, melhorando a performance
     });
 }, observerOptions);
 
 // Observar elementos para animação
 document.addEventListener('DOMContentLoaded', function() {
-    const elementsToAnimate = document.querySelectorAll('.service-card, .project-card, .portfolio-item, .testimonial-card');
+    const elementsToAnimate = document.querySelectorAll('.service-card, .project-card, .portfolio-item, .testimonial-card, .reveal, .hero-metrics');
     elementsToAnimate.forEach(element => {
         observer.observe(element);
     });
+
+    initScrollProgress();
+    initCursorGlow();
+    initRippleEffect();
 });
+
+// ===== BARRA DE PROGRESSO DO SCROLL =====
+function initScrollProgress() {
+    const progressBar = document.createElement('div');
+    progressBar.className = 'scroll-progress';
+    document.body.appendChild(progressBar);
+
+    window.addEventListener('scroll', () => {
+        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (window.scrollY / windowHeight) * 100;
+        progressBar.style.width = `${scrolled}%`;
+    });
+}
+
+// ===== CURSOR GLOW NO HERO =====
+function initCursorGlow() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+
+    const glow = document.createElement('div');
+    glow.className = 'cursor-glow';
+    hero.appendChild(glow);
+
+    hero.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        glow.style.left = `${x}px`;
+        glow.style.top = `${y}px`;
+        glow.style.opacity = '1';
+    });
+
+    hero.addEventListener('mouseleave', () => {
+        glow.style.opacity = '0';
+    });
+}
+
+// ===== EFEITO RIPPLE NOS BOTÕES =====
+function initRippleEffect() {
+    const buttons = document.querySelectorAll('.btn-primary');
+    
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const x = e.clientX - e.target.getBoundingClientRect().left;
+            const y = e.clientY - e.target.getBoundingClientRect().top;
+            
+            const ripple = document.createElement('span');
+            ripple.className = 'btn-ripple';
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+}
+
+// ===== ANIMAÇÃO DE NÚMEROS (CountUp) =====
+function animateNumbers() {
+    const counters = document.querySelectorAll('[data-count]');
+    
+    counters.forEach(counter => {
+        const target = +counter.getAttribute('data-count');
+        const duration = 2000; // 2 segundos
+        const step = target / (duration / 16); // 60fps
+        let current = 0;
+        
+        const updateCounter = () => {
+            current += step;
+            if (current < target) {
+                counter.innerText = Math.ceil(current);
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.innerText = target;
+            }
+        };
+        
+        updateCounter();
+    });
+}
