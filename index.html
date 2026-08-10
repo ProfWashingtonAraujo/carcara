@@ -676,31 +676,86 @@
             <div class="row">
                 <div class="col-lg-8 reveal reveal-slide-left">
                     <div class="contact-form">
-                        <form id="contactForm">
+                        <form id="contactForm" action="https://formsubmit.co/prof.washingtonaraujo@gmail.com"
+                            method="POST">
+                            <input type="hidden" name="_subject" value="Nova solicitação de orçamento - Site Carcará">
+                            <input type="hidden" name="_template" value="table">
+                            <input type="hidden" name="_captcha" value="false">
+                            <input type="text" name="_honey" class="d-none" tabindex="-1" autocomplete="off">
                             <div class="row">
                                 <div class="col-md-6">
                                     <label for="name" class="form-label">Nome</label>
-                                    <input type="text" class="form-control" id="name" placeholder="Seu nome"
+                                    <input type="text" class="form-control" id="name" name="Nome" placeholder="Seu nome"
                                         autocomplete="name" required>
                                     <div class="invalid-feedback">Por favor, insira seu nome.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="email" class="form-label">E-mail</label>
-                                    <input type="email" class="form-control" id="email" placeholder="seu@email.com"
+                                    <input type="email" class="form-control" id="email" name="email"
+                                        placeholder="seu@email.com"
                                         autocomplete="email" required>
                                     <div class="invalid-feedback">Por favor, insira um e-mail válido.</div>
                                 </div>
                             </div>
-                            <label for="subject" class="form-label">Assunto</label>
-                            <input type="text" class="form-control" id="subject"
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="phone" class="form-label">Telefone/WhatsApp</label>
+                                    <input type="tel" class="form-control" id="phone" name="Telefone ou WhatsApp"
+                                        placeholder="(88) 99999-9999" autocomplete="tel" required>
+                                    <div class="invalid-feedback">Por favor, informe um telefone para contato.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="service" class="form-label">Tipo de serviço</label>
+                                    <select class="form-select" id="service" name="Tipo de serviço" required>
+                                        <option value="" selected disabled>Selecione uma opção</option>
+                                        <option>Site ou sistema web</option>
+                                        <option>Aplicativo mobile</option>
+                                        <option>Automação de processos</option>
+                                        <option>Integração de sistemas</option>
+                                        <option>Consultoria em tecnologia</option>
+                                        <option>Outro</option>
+                                    </select>
+                                    <div class="invalid-feedback">Por favor, selecione o tipo de serviço.</div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="budget" class="form-label">Faixa de investimento</label>
+                                    <select class="form-select" id="budget" name="Faixa de investimento" required>
+                                        <option value="" selected disabled>Selecione uma faixa</option>
+                                        <option>Até R$ 5 mil</option>
+                                        <option>De R$ 5 mil a R$ 15 mil</option>
+                                        <option>De R$ 15 mil a R$ 30 mil</option>
+                                        <option>Acima de R$ 30 mil</option>
+                                        <option>A definir</option>
+                                    </select>
+                                    <div class="invalid-feedback">Por favor, selecione uma faixa de investimento.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="deadline" class="form-label">Prazo desejado</label>
+                                    <select class="form-select" id="deadline" name="Prazo desejado" required>
+                                        <option value="" selected disabled>Selecione um prazo</option>
+                                        <option>Até 30 dias</option>
+                                        <option>De 1 a 3 meses</option>
+                                        <option>De 3 a 6 meses</option>
+                                        <option>Mais de 6 meses</option>
+                                        <option>A definir</option>
+                                    </select>
+                                    <div class="invalid-feedback">Por favor, selecione o prazo desejado.</div>
+                                </div>
+                            </div>
+                            <label for="subject" class="form-label">Resumo do projeto</label>
+                            <input type="text" class="form-control" id="subject" name="Resumo do projeto"
                                 placeholder="Ex.: Automatizar controle de pedidos" required>
-                            <div class="invalid-feedback">Por favor, insira um assunto.</div>
-                            <label for="message" class="form-label">Mensagem</label>
-                            <textarea class="form-control" id="message" rows="5"
-                                placeholder="Descreva o cenário atual e o que você deseja melhorar" required></textarea>
-                            <div class="invalid-feedback">Por favor, insira sua mensagem.</div>
-                            <button type="submit" class="btn btn-primary btn-ripple">Enviar mensagem</button>
-                            <p class="form-note">Retornamos em até 1 dia útil.</p>
+                            <div class="invalid-feedback">Por favor, resuma o projeto.</div>
+                            <label for="message" class="form-label">Detalhes da necessidade</label>
+                            <textarea class="form-control" id="message" name="Detalhes da necessidade" rows="5"
+                                placeholder="Descreva o cenário atual, o que deseja melhorar e os principais requisitos"
+                                required></textarea>
+                            <div class="invalid-feedback">Por favor, descreva sua necessidade.</div>
+                            <button type="submit" class="btn btn-primary btn-ripple">Solicitar orçamento</button>
+                            <p class="form-note">Seus dados serão usados apenas para responder à solicitação. Retornamos
+                                em até 1 dia útil.</p>
                         </form>
                     </div>
                 </div>
@@ -731,7 +786,7 @@
                             </div>
                             <div>
                                 <h5>E-mail</h5>
-                                <p>comercial@carcaratecnologia.com.br</p>
+                                <p>prof.washingtonaraujo@gmail.com</p>
                             </div>
                         </div>
                         <div class="contact-item">
@@ -807,7 +862,7 @@
                             <li><i class="fas fa-map-marker-alt me-2"></i> R. Cerelino Quezado F. Filho, 848 - Juazeiro
                                 do Norte, Ce</li>
                             <li><i class="fas fa-phone me-2"></i> (88) 9999-9999</li>
-                            <li><i class="fas fa-envelope me-2"></i> comercial@carcaratec.com.br</li>
+                            <li><i class="fas fa-envelope me-2"></i> prof.washingtonaraujo@gmail.com</li>
                         </ul>
                     </div>
                 </div>

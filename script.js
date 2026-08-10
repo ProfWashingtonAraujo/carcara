@@ -38,49 +38,28 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 const contactForm = document.getElementById('contactForm');
 
 if (contactForm) {
-    contactForm.addEventListener('submit', function(e) {
+    contactForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        // Limpar validações anteriores
         clearValidation();
 
-        const name = document.getElementById('name');
         const email = document.getElementById('email');
-        const subject = document.getElementById('subject');
-        const message = document.getElementById('message');
-
         let isValid = true;
 
-        // Validação do nome
-        if (!name.value.trim()) {
-            showError(name, 'Por favor, insira seu nome.');
-            isValid = false;
-        }
+        contactForm.querySelectorAll('[required]').forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            }
+        });
 
-        // Validação do email
-        if (!email.value.trim()) {
-            showError(email, 'Por favor, insira seu e-mail.');
-            isValid = false;
-        } else if (!isValidEmail(email.value)) {
+        if (email.value.trim() && !isValidEmail(email.value)) {
             showError(email, 'Por favor, insira um e-mail válido.');
             isValid = false;
         }
 
-        // Validação do assunto
-        if (!subject.value.trim()) {
-            showError(subject, 'Por favor, insira um assunto.');
-            isValid = false;
-        }
-
-        // Validação da mensagem
-        if (!message.value.trim()) {
-            showError(message, 'Por favor, insira sua mensagem.');
-            isValid = false;
-        }
-
         if (isValid) {
-            // Simulação de envio do formulário
-            simulateFormSubmission();
+            await submitContactForm();
         }
     });
 }
@@ -107,7 +86,7 @@ function showError(input, message) {
 
 // Função para limpar validações
 function clearValidation() {
-    const inputs = document.querySelectorAll('.form-control');
+    const inputs = contactForm.querySelectorAll('.form-control, .form-select');
     inputs.forEach(input => {
         input.classList.remove('is-invalid');
     });
@@ -118,29 +97,44 @@ function clearValidation() {
     }
 }
 
-// Função para simular envio do formulário
-function simulateFormSubmission() {
-    const submitButton = document.querySelector('#contactForm button[type="submit"]');
-    const originalText = submitButton.textContent;
-    
-    // Simular loading
+// Envia os dados sem tirar o visitante da página
+async function submitContactForm() {
+    const submitButton = contactForm.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+
     submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
     submitButton.disabled = true;
-    
-    // Simular delay de rede
-    setTimeout(() => {
+
+    try {
+        const endpoint = contactForm.action.replace('formsubmit.co/', 'formsubmit.co/ajax/');
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: new FormData(contactForm),
+            headers: { Accept: 'application/json' }
+        });
+        const result = await response.json();
+
+        if (!response.ok || (result.success !== true && result.success !== 'true')) {
+            throw new Error('Não foi possível enviar o formulário.');
+        }
+
         const alert = document.createElement('div');
         alert.className = 'alert alert-success form-alert mt-3';
         alert.setAttribute('role', 'status');
-        alert.textContent = 'Mensagem enviada com sucesso. Entraremos em contato em breve.';
+        alert.textContent = 'Solicitação enviada com sucesso. Entraremos em contato em até 1 dia útil.';
 
-        document.getElementById('contactForm').reset();
-        document.getElementById('contactForm').appendChild(alert);
-        
-        // Restaurar botão
+        contactForm.reset();
+        contactForm.appendChild(alert);
+    } catch (error) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger form-alert mt-3';
+        alert.setAttribute('role', 'alert');
+        alert.textContent = 'Não foi possível enviar agora. Tente novamente ou entre em contato pelo telefone.';
+        contactForm.appendChild(alert);
+    } finally {
         submitButton.innerHTML = originalText;
         submitButton.disabled = false;
-    }, 2000);
+    }
 }
 
 // ===== INICIALIZAÇÃO DO CAROUSEL =====
@@ -276,7 +270,7 @@ function initRippleEffect() {
             const y = e.clientY - e.target.getBoundingClientRect().top;
             
             const ripple = document.createElement('span');
-            ripple.className = 'btn-ripple';
+            ripple.className = 'btn-ripple-wave';
             ripple.style.left = `${x}px`;
             ripple.style.top = `${y}px`;
             
