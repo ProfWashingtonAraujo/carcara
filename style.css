@@ -145,9 +145,8 @@ a {
 .hero {
     align-items: center;
     background:
-        radial-gradient(circle at 78% 18%, rgba(249, 115, 22, 0.24), transparent 28%),
-        radial-gradient(circle at 14% 22%, rgba(77, 164, 255, 0.24), transparent 24%),
-        linear-gradient(135deg, #081827 0%, var(--primary-blue) 48%, #123f63 100%);
+        linear-gradient(90deg, rgba(8, 24, 39, 0.98) 0%, rgba(15, 41, 71, 0.92) 48%, rgba(15, 41, 71, 0.48) 100%),
+        url('https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1920&q=85') center / cover no-repeat;
     color: var(--white);
     display: flex;
     min-height: 100vh;
@@ -181,8 +180,7 @@ a {
     right: 0;
 }
 
-.hero-content,
-.hero-image {
+.hero-content {
     position: relative;
     z-index: 1;
 }
@@ -235,21 +233,6 @@ a {
     display: block;
     font-size: 0.82rem;
     margin-top: 0.35rem;
-}
-
-.hero-image {
-    animation: float 6s ease-in-out infinite;
-}
-
-.hero-image img {
-    border-radius: 30px;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
-}
-
-@keyframes float {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-    100% { transform: translateY(0); }
 }
 
 @keyframes fadeUp {
@@ -1277,6 +1260,9 @@ footer {
 
 @media (max-width: 768px) {
     .hero {
+        background:
+            linear-gradient(rgba(8, 24, 39, 0.9), rgba(15, 41, 71, 0.88)),
+            url('https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=82') center / cover no-repeat;
         min-height: auto;
         padding: 7rem 0 4rem;
     }
