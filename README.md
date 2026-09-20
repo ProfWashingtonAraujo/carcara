@@ -1,6 +1,6 @@
 # Carcará Tecnologia - Landing Page
 
-[![Live Demo](https://img.shields.io/badge/demo-live-green.svg)](https://carcara-jade.vercel.app)
+[![Live Demo](https://img.shields.io/badge/demo-live-green.svg)](https://carcara-tech.vercel.app/)
 ![Status](https://img.shields.io/badge/status-active-blue.svg)
 
 [Português](#português) | [English](#english)
