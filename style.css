@@ -591,12 +591,6 @@ section {
     padding: 1.6rem;
 }
 
-.project-card-header i {
-    color: var(--primary-blue);
-    font-size: 1.35rem;
-    opacity: 0.75;
-}
-
 .project-language {
     background: #fff7ed;
     border-radius: 999px;
