@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const image = button.getAttribute('data-image') || '';
             const description = button.getAttribute('data-description') || '';
             const details = button.getAttribute('data-details') || '';
-            const github = button.getAttribute('data-github') || '#';
+            const github = button.getAttribute('data-github');
             const demo = button.getAttribute('data-demo');
 
             document.getElementById('projectDetailModalLabel').textContent = title;
@@ -167,7 +167,13 @@ document.addEventListener('DOMContentLoaded', function() {
             imageElement.src = image;
             imageElement.alt = `Prévia do projeto ${title}`;
 
-            document.getElementById('projectDetailGithub').href = github;
+            const githubLink = document.getElementById('projectDetailGithub');
+            if (github) {
+                githubLink.href = github;
+                githubLink.classList.remove('d-none');
+            } else {
+                githubLink.classList.add('d-none');
+            }
 
             const demoLink = document.getElementById('projectDetailDemo');
             if (demo) {
