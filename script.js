@@ -1,35 +1,35 @@
 // ===== NAVBAR SCROLL EFFECT =====
-window.addEventListener('scroll', function() {
-    const navbar = document.querySelector('.navbar');
-    if (!navbar) return;
+const navbar = document.querySelector('.navbar');
+let scrollTicking = false;
 
-    if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
-    } else {
-        navbar.classList.remove('scrolled');
+function updateOnScroll() {
+    if (navbar) {
+        navbar.classList.toggle('scrolled', window.scrollY > 50);
     }
-});
 
-// ===== SMOOTH SCROLLING PARA LINKS INTERNOS =====
+    const progressBar = document.querySelector('.scroll-progress');
+    if (progressBar) {
+        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        progressBar.style.width = windowHeight > 0 ? `${(window.scrollY / windowHeight) * 100}%` : '0%';
+    }
+
+    scrollTicking = false;
+}
+
+window.addEventListener('scroll', function() {
+    if (!scrollTicking) {
+        scrollTicking = true;
+        requestAnimationFrame(updateOnScroll);
+    }
+}, { passive: true });
+
+// ===== FECHAR MENU MOBILE APÓS CLIQUE =====
+// A rolagem suave e o deslocamento da navbar são feitos via CSS (scroll-behavior e scroll-padding-top)
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        const targetId = this.getAttribute('href');
-        if (targetId === '#') return;
-        
-        const targetElement = document.querySelector(targetId);
-        if (targetElement) {
-            e.preventDefault();
-
-            window.scrollTo({
-                top: targetElement.offsetTop - 80,
-                behavior: 'smooth'
-            });
-            
-            // Fechar menu mobile após clique
-            const navbarToggler = document.querySelector('.navbar-toggler');
-            if (navbarToggler && !navbarToggler.classList.contains('collapsed')) {
-                navbarToggler.click();
-            }
+    anchor.addEventListener('click', function () {
+        const navbarToggler = document.querySelector('.navbar-toggler');
+        if (navbarToggler && !navbarToggler.classList.contains('collapsed')) {
+            navbarToggler.click();
         }
     });
 });
@@ -181,8 +181,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const myCarousel = document.querySelector('#testimonialCarousel');
     if (myCarousel) {
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         new bootstrap.Carousel(myCarousel, {
-            interval: 5000,
+            interval: reduceMotion ? false : 5000,
             wrap: true
         });
     }
@@ -228,18 +229,13 @@ function initScrollProgress() {
     const progressBar = document.createElement('div');
     progressBar.className = 'scroll-progress';
     document.body.appendChild(progressBar);
-
-    window.addEventListener('scroll', () => {
-        const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-        const scrolled = (window.scrollY / windowHeight) * 100;
-        progressBar.style.width = `${scrolled}%`;
-    });
+    updateOnScroll();
 }
 
 // ===== CURSOR GLOW NO HERO =====
 function initCursorGlow() {
     const hero = document.querySelector('.hero');
-    if (!hero) return;
+    if (!hero || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const glow = document.createElement('div');
     glow.className = 'cursor-glow';
