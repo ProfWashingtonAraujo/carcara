@@ -91,6 +91,9 @@ function parseBody(schema, body, { partial = false } = {}) {
     return out;
 }
 
+// Verificação de saúde usada pelo Render
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+
 // ===== Autenticação =====
 function requireAuth(req, res, next) {
     try {

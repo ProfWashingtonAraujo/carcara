@@ -45,7 +45,7 @@ As tabelas e o usuário administrador são criados automaticamente na primeira e
 **Publicar**
 1. **Neon:** crie um projeto e copie a connection string.
 2. **Render:** *New → Blueprint* apontando para este repositório (`render.yaml`). Informe `DATABASE_URL`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
-3. **Vercel:** em `vercel.json`, troque `carcara-api.onrender.com` pela URL real do serviço no Render e faça o deploy.
+3. **Vercel:** em `vercel.json`, troque `carcara-api-n4nq.onrender.com` pela URL real do serviço no Render e faça o deploy.
 
 ---
 

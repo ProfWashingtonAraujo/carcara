@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://carcara-api.onrender.com/api/:path*" }
+    { "source": "/api/:path*", "destination": "https://carcara-api-n4nq.onrender.com/api/:path*" }
   ],
   "headers": [
     { "source": "/app/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }

@@ -10,7 +10,7 @@ if (!process.env.DATABASE_URL) {
     process.exit(1);
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5, connectionTimeoutMillis: 15000 });
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
