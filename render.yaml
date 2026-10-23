@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: carcara-api
+    name: carcara
     runtime: node
     rootDir: server
     plan: free
