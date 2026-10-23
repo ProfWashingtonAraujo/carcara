@@ -97,6 +97,41 @@ function clearValidation() {
     }
 }
 
+// Envia o formulário por e-mail via formsubmit
+async function sendByEmail() {
+    const endpoint = contactForm.action.replace('formsubmit.co/', 'formsubmit.co/ajax/');
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        body: new FormData(contactForm),
+        headers: { Accept: 'application/json' }
+    });
+    const result = await response.json();
+
+    if (!response.ok || (result.success !== true && result.success !== 'true')) {
+        throw new Error('Falha no envio por e-mail.');
+    }
+}
+
+// Registra a solicitação no painel de gestão
+async function saveLead() {
+    const field = id => contactForm.elements[id]?.value || '';
+    const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: field('name'),
+            email: field('email'),
+            phone: field('phone'),
+            service: field('service'),
+            budget: field('budget'),
+            deadline: field('deadline'),
+            message: field('message'),
+            _honey: contactForm.elements['_honey']?.value || ''
+        })
+    });
+    if (!response.ok) throw new Error('Falha ao registrar a solicitação.');
+}
+
 // Envia os dados sem tirar o visitante da página
 async function submitContactForm() {
     const submitButton = contactForm.querySelector('button[type="submit"]');
@@ -106,15 +141,9 @@ async function submitContactForm() {
     submitButton.disabled = true;
 
     try {
-        const endpoint = contactForm.action.replace('formsubmit.co/', 'formsubmit.co/ajax/');
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            body: new FormData(contactForm),
-            headers: { Accept: 'application/json' }
-        });
-        const result = await response.json();
-
-        if (!response.ok || (result.success !== true && result.success !== 'true')) {
+        // Envia por e-mail (formsubmit) e grava no painel (API) ao mesmo tempo; basta um deles dar certo
+        const [mail, lead] = await Promise.allSettled([sendByEmail(), saveLead()]);
+        if (mail.status === 'rejected' && lead.status === 'rejected') {
             throw new Error('Não foi possível enviar o formulário.');
         }
 

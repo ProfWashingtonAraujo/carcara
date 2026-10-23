@@ -28,6 +28,25 @@ Este repositório contém o código-fonte da landing page institucional da Carca
 - **Ícones:** [Font Awesome](https://fontawesome.com/)
 - **Fontes:** [Inter (Google Fonts)](https://fonts.google.com/specimen/Inter)
 
+### 🔐 Painel de gestão (`/app`)
+Área restrita com login para gerenciar **clientes, projetos, solicitações do site e financeiro**. As solicitações enviadas pelo formulário da landing page também são gravadas no painel.
+
+**Arquitetura:** landing + painel estáticos na **Vercel**, API Node/Express (`server/`) no **Render** e banco Postgres no **Neon**. A Vercel repassa `/api/*` para o Render (`vercel.json`), então o cookie de sessão é do mesmo domínio.
+
+**Rodar localmente**
+```bash
+cd server
+cp .env.example .env      # preencha DATABASE_URL, JWT_SECRET, ADMIN_EMAIL e ADMIN_PASSWORD
+npm install
+npm start                 # http://localhost:3000 (landing) e /app (painel)
+```
+As tabelas e o usuário administrador são criados automaticamente na primeira execução.
+
+**Publicar**
+1. **Neon:** crie um projeto e copie a connection string.
+2. **Render:** *New → Blueprint* apontando para este repositório (`render.yaml`). Informe `DATABASE_URL`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`.
+3. **Vercel:** em `vercel.json`, troque `carcara-api.onrender.com` pela URL real do serviço no Render e faça o deploy.
+
 ---
 
 ## English

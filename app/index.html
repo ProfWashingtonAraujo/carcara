@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel | Carcará Tecnologia</title>
+    <link rel="icon" href="../src/images/favicon.svg" type="image/svg+xml">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#0f2947">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="app.css">
+</head>
+
+<body>
+    <div class="bg" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+
+    <!-- Login -->
+    <main class="login" id="login" hidden>
+        <form class="glass login-card" id="loginForm" novalidate>
+            <div class="login-logo"><img src="../src/images/favicon.svg" alt="" width="44" height="44"></div>
+            <h1>Painel Carcará</h1>
+            <p class="login-sub">Entre para gerenciar clientes, projetos e finanças.</p>
+
+            <label class="lf" for="loginEmail">E-mail</label>
+            <div class="lf-input"><i class="fas fa-envelope"></i><input id="loginEmail" type="email" autocomplete="username" placeholder="voce@carcara.com" required></div>
+
+            <label class="lf" for="loginPassword">Senha</label>
+            <div class="lf-input">
+                <i class="fas fa-lock"></i>
+                <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha" required>
+                <button type="button" class="eye" id="togglePass" aria-label="Mostrar senha"><i class="fas fa-eye"></i></button>
+            </div>
+
+            <p class="login-error" id="loginError" role="alert" hidden></p>
+            <button type="submit" class="btn primary block" id="loginBtn">Entrar</button>
+            <a class="back" href="../index.html"><i class="fas fa-arrow-left"></i> Voltar ao site</a>
+        </form>
+    </main>
+
+    <!-- Aplicação -->
+    <div class="app" id="shell" hidden>
+        <nav class="sidebar glass" aria-label="Navegação principal">
+            <a class="side-logo" href="../index.html" aria-label="Ir para o site" data-tip="Ver site">
+                <img src="../src/images/favicon.svg" alt="" width="28" height="28">
+            </a>
+            <ul class="side-nav">
+                <li><button class="side-btn" data-nav="dashboard" data-tip="Dashboard"><i class="fas fa-table-cells-large"></i></button></li>
+                <li><button class="side-btn" data-nav="clientes" data-tip="Clientes"><i class="fas fa-users"></i></button></li>
+                <li><button class="side-btn" data-nav="projetos" data-tip="Projetos"><i class="fas fa-diagram-project"></i></button></li>
+                <li><button class="side-btn" data-nav="solicitacoes" data-tip="Solicitações"><i class="fas fa-inbox"></i><span class="dot-badge" id="leadBadge" hidden></span></button></li>
+                <li><button class="side-btn" data-nav="financeiro" data-tip="Financeiro"><i class="fas fa-wallet"></i></button></li>
+            </ul>
+            <button class="side-cta" id="logoutBtn" data-tip="Sair" aria-label="Sair"><i class="fas fa-right-from-bracket"></i></button>
+        </nav>
+
+        <main class="main glass" id="main">
+            <header class="topbar">
+                <div>
+                    <h1 id="greeting">Olá 👋</h1>
+                    <p id="subtitle"></p>
+                </div>
+                <div class="top-actions">
+                    <label class="search">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="search" placeholder="Buscar..." aria-label="Buscar">
+                    </label>
+                    <button class="btn primary" id="newBtn"><i class="fas fa-plus"></i> <span id="newLabel">Novo</span></button>
+                </div>
+            </header>
+
+            <div class="load-error" id="loadError" hidden></div>
+            <div id="content"></div>
+        </main>
+
+        <aside class="side-panel glass" aria-label="Agenda">
+            <div class="profile">
+                <span class="avatar" id="avatar">C</span>
+                <div>
+                    <strong id="userName">—</strong>
+                    <span id="userEmail"></span>
+                </div>
+            </div>
+
+            <div class="calendar">
+                <div class="cal-head">
+                    <button class="cal-nav" id="calPrev" aria-label="Mês anterior"><i class="fas fa-chevron-left"></i></button>
+                    <strong id="calTitle"></strong>
+                    <button class="cal-nav" id="calNext" aria-label="Próximo mês"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="cal-grid" id="calGrid"></div>
+                <p class="cal-hint"><span class="legend l-proj"></span> prazo de projeto <span class="legend l-pay"></span> vencimento</p>
+            </div>
+
+            <div class="section-head sm"><h2 id="agendaTitle">Próximos vencimentos</h2></div>
+            <ul class="agenda" id="agenda"></ul>
+        </aside>
+    </div>
+
+    <div class="switcher" id="switcher" role="tablist" aria-label="Alternar visualização" hidden>
+        <span>Ir para</span>
+        <button data-nav="dashboard">Dashboard</button>
+        <button data-nav="projetos">Projetos</button>
+        <button data-nav="clientes">Clientes</button>
+    </div>
+
+    <!-- Formulário genérico -->
+    <dialog id="formDialog" aria-labelledby="formTitle">
+        <form class="dlg-body glass" id="entityForm" novalidate>
+            <button type="button" class="dlg-close" id="formClose" aria-label="Fechar"><i class="fas fa-xmark"></i></button>
+            <h2 id="formTitle"></h2>
+            <div class="form-grid" id="formFields"></div>
+            <p class="login-error" id="formError" role="alert" hidden></p>
+            <div class="dlg-actions">
+                <button type="button" class="btn danger" id="formDelete" hidden><i class="fas fa-trash"></i> Excluir</button>
+                <span class="grow"></span>
+                <button type="button" class="btn ghost" id="formCancel">Cancelar</button>
+                <button type="submit" class="btn primary" id="formSave">Salvar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
