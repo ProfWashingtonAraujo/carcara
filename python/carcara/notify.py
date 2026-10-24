@@ -1,6 +1,7 @@
 """Envio de avisos: e-mail (SMTP) e/ou webhook; sem nenhum configurado, apenas imprime."""
 import json
 import smtplib
+import sys
 import urllib.request
 from email.message import EmailMessage
 from pathlib import Path
@@ -18,7 +19,9 @@ def send(subject: str, body: str, attachments: list[Path] | None = None) -> list
         _send_webhook(subject, body)
         channels.append("webhook")
     if not channels:
-        print(f"[sem canal configurado] {subject}\n{body}")
+        # fora de um terminal (ex.: log público do GitHub Actions) o corpo traria nomes e valores
+        shown = f"\n{body}" if sys.stdout.isatty() else " (conteúdo omitido; configure e-mail ou webhook para recebê-lo)"
+        print(f"[sem canal configurado] {subject}{shown}")
     return channels
 
 

@@ -49,3 +49,12 @@ def test_xlsx_and_pdf_are_generated(tmp_path):
     assert wb["Resumo"]["B2"].value == 3000
     p = reports.build_pdf(sample(), tmp_path / "r.pdf")
     assert p.read_bytes().startswith(b"%PDF")
+
+
+def test_notify_hides_body_when_not_a_terminal(monkeypatch, capsys):
+    from carcara import notify
+    for k in ("SMTP_HOST", "MAIL_TO", "ALERT_WEBHOOK_URL"):
+        monkeypatch.delenv(k, raising=False)
+    notify.send("Assunto", "Cliente Secreto R$ 999")  # pytest captura stdout: não é um terminal
+    out = capsys.readouterr().out
+    assert "Assunto" in out and "Cliente Secreto" not in out

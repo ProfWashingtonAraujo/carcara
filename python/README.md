@@ -28,12 +28,12 @@ Funciona com provedores **gratuitos** ou com a Claude (paga):
 
 | `AI_PROVIDER` | Chave | Custo |
 |---|---|---|
-| `groq` (padrão sem chave da Claude) | `AI_API_KEY` de console.groq.com | grátis, com limite de requisições |
+| `groq` (padrão sem chave da Claude; modelo `openai/gpt-oss-20b`) | `AI_API_KEY` de console.groq.com | grátis, com limite de requisições |
 | `gemini` | `AI_API_KEY` de aistudio.google.com | grátis; o Google pode usar o conteúdo para melhorar produtos |
 | `openrouter` | `AI_API_KEY` de openrouter.ai | modelos `:free`, limite diário baixo |
 | `claude` (padrão se houver `ANTHROPIC_API_KEY`) | `ANTHROPIC_API_KEY` | pago por uso |
 
-`AI_MODEL` e `AI_BASE_URL` trocam o modelo ou o endereço (qualquer API compatível com OpenAI serve). Os modelos gratuitos mudam com o tempo: se um sumir, ajuste `AI_MODEL`. Quando o limite gratuito acaba, a execução para e as solicitações restantes são analisadas na vez seguinte.
+`AI_MODEL` e `AI_BASE_URL` trocam o modelo ou o endereço (qualquer API compatível com OpenAI serve). Os modelos liberados variam por conta e mudam com o tempo (o Llama 3.3 70B, por exemplo, deu "model_not_found" em uma conta gratuita): se um falhar, ajuste `AI_MODEL`. Quando o limite gratuito acaba, a execução para e as solicitações restantes são analisadas na vez seguinte.
 
 As solicitações têm dados pessoais (nome, e-mail, telefone); confira a política de dados do provedor antes de usar. O texto do visitante é tratado como dado, e a resposta é só um rascunho: nada é enviado ao cliente automaticamente. No GitHub Actions, guarde a chave em *Secrets* (`AI_API_KEY`) e o provedor em *Variables* (`AI_PROVIDER`).
 

@@ -1,4 +1,6 @@
 """Resumo diário de pendências: cobranças, prazos de projetos e solicitações sem resposta."""
+import sys
+
 from . import notify
 
 
@@ -57,7 +59,7 @@ def run(conn, days: int = 3, lead_hours: int = 24, dry_run: bool = False) -> str
         return None
     subject, body = message
     if dry_run:
-        print(f"{subject}\n\n{body}")
+        print(f"{subject}\n\n{body}" if sys.stdout.isatty() else subject)
     else:
         print(f"Enviado por: {', '.join(notify.send(subject, body)) or 'terminal'}")
     return body
