@@ -128,7 +128,8 @@ def analyze_openai_compatible(lead: dict, name: str, client: httpx.Client | None
             client.close()
     if resp.status_code == 429:
         raise RateLimited("limite do plano gratuito atingido")
-    resp.raise_for_status()
+    if resp.is_error:
+        raise RuntimeError(f"{name} respondeu {resp.status_code}: {resp.text[:300]}")
     return validate(json.loads(resp.json()["choices"][0]["message"]["content"]))
 
 
