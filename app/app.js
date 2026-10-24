@@ -92,7 +92,7 @@ function showApp() {
     $('#userEmail').textContent = state.user.email;
     $('#avatar').textContent = state.user.name.trim().charAt(0).toUpperCase();
     const h = new Date().getHours();
-    $('#greeting').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${state.user.name.split(' ')[0]} 👋`;
+    $('#greeting').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${state.user.name.split(' ')[0]}`;
 }
 
 $('#togglePass').addEventListener('click', () => {
@@ -237,22 +237,36 @@ function drawChart() {
     const host = $('#chart');
     if (!host || !state.summary) return;
     const data = state.summary.months;
-    const W = 560, H = 220, pl = 12, pr = 12, pt = 30, pb = 28;
+    const W = 560, H = 230, pl = 24, pr = 24, pt = 38, pb = 30;
     const max = Math.max(...data.map(m => m.total), 1);
-    const bw = (W - pl - pr) / data.length;
+    const X = i => pl + (i / (data.length - 1)) * (W - pl - pr);
+    const Y = v => pt + (1 - v / max) * (H - pt - pb);
+    const P = data.map((m, i) => [X(i), Y(m.total)]);
     const monthName = m => new Date(`${m}-01T12:00:00`).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
-    const bars = data.map((m, i) => {
-        const h = (m.total / max) * (H - pt - pb);
-        const x = pl + i * bw + bw * .18, w = bw * .64, y = H - pb - h;
-        const last = i === data.length - 1;
-        return `<g>
-            <rect class="bar-bg" x="${x}" y="${pt}" width="${w}" height="${H - pt - pb}" rx="10"/>
-            <rect class="bar-fg ${last ? 'cur' : ''}" x="${x}" y="${y}" width="${w}" height="${Math.max(h, m.total ? 4 : 0)}" rx="10" tabindex="0" aria-label="${monthName(m.month)}: ${money(m.total)}"><title>${monthName(m.month)}: ${money(m.total)}</title></rect>
-            ${m.total ? `<text x="${x + w / 2}" y="${y - 8}" text-anchor="middle" class="val">${money(m.total).replace(/\s/g, ' ')}</text>` : ''}
-            <text x="${x + w / 2}" y="${H - 8}" text-anchor="middle">${monthName(m.month)}</text>
-        </g>`;
-    }).join('');
-    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Receita recebida nos últimos 6 meses">${bars}</svg>`;
+    const base = Y(0), top = Y(max);
+
+    // curva suave (Catmull-Rom -> Bézier), sem passar abaixo de zero nem acima do máximo
+    const clamp = y => Math.min(Math.max(y, top), base);
+    let d = `M${P[0][0]},${P[0][1]}`;
+    for (let i = 0; i < P.length - 1; i++) {
+        const p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || p2;
+        const c1 = [p1[0] + (p2[0] - p0[0]) / 6, clamp(p1[1] + (p2[1] - p0[1]) / 6)];
+        const c2 = [p2[0] - (p3[0] - p1[0]) / 6, clamp(p2[1] - (p3[1] - p1[1]) / 6)];
+        d += ` C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${p2[0]},${p2[1]}`;
+    }
+
+    const grid = [0, .5, 1].map(f => `<line class="grid" x1="${pl}" x2="${W - pr}" y1="${Y(max * f)}" y2="${Y(max * f)}"/>`).join('');
+    const labels = data.map((m, i) => `<text x="${P[i][0]}" y="${H - 8}" text-anchor="middle">${monthName(m.month)}</text>`).join('');
+    const values = data.map((m, i) => (m.total ? `<text class="val" x="${P[i][0]}" y="${P[i][1] - 14}" text-anchor="middle">${money(m.total).replace(/\s/g, ' ')}</text>` : '')).join('');
+    const dots = data.map((m, i) => `<circle class="dot ${i === data.length - 1 ? 'cur' : ''}" r="${i === data.length - 1 ? 6 : 5}" cx="${P[i][0]}" cy="${P[i][1]}" tabindex="0" aria-label="${monthName(m.month)}: ${money(m.total)}"><title>${monthName(m.month)}: ${money(m.total)}</title></circle>`).join('');
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Receita recebida nos últimos 6 meses">
+        <defs><linearGradient id="revG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6a1a" stop-opacity=".3"/><stop offset="1" stop-color="#ff6a1a" stop-opacity="0"/></linearGradient></defs>
+        ${grid}
+        <path class="area" d="${d} L${P[P.length - 1][0]},${base} L${P[0][0]},${base} Z"/>
+        <path class="line" pathLength="1" d="${d}"/>
+        ${values}${labels}${dots}
+    </svg>`;
 }
 
 // ===== CLIENTES =====
