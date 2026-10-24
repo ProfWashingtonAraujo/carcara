@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* sem .env: usa o ambiente */ }
 
 const { pool, init } = require('./db');
+const { REPORTS, TYPES, MONTH_RE } = require('./export');
 
 const PROD = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -346,6 +347,24 @@ api.post('/leads/:id/convert', wrap(async (req, res) => {
     } finally {
         client.release();
     }
+}));
+
+// Relatórios para download (Excel/PDF)
+api.get('/export/:report', wrap(async (req, res) => {
+    const report = REPORTS[req.params.report];
+    if (!report) throw new HttpError(404, 'Relatório não encontrado');
+    const format = req.query.format;
+    if (!TYPES[format]) throw new HttpError(400, 'Formato inválido. Use xlsx ou pdf.');
+    const now = new Date();
+    const month = req.query.month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (!MONTH_RE.test(month)) throw new HttpError(400, 'Mês inválido. Use o formato AAAA-MM.');
+    const file = await report[format](await report.data(pool, month));
+    res.set({
+        'Content-Type': TYPES[format],
+        'Content-Disposition': `attachment; filename="carcara-${report.label}-${month}.${format}"`,
+        'Cache-Control': 'no-store'
+    });
+    res.send(Buffer.from(file));
 }));
 
 // Resumo para a dashboard

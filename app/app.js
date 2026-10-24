@@ -35,7 +35,7 @@ async function api(path, { method = 'GET', body } = {}) {
 }
 
 // ===== ESTADO =====
-const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], summary: null, view: 'dashboard', query: '' };
+const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], summary: null, view: 'dashboard', query: '', exportMonth: isoToday().slice(0, 7) };
 
 const VIEWS = {
     dashboard: { subtitle: 'Visão geral do seu negócio.', render: renderDashboard },
@@ -173,6 +173,8 @@ document.addEventListener('click', e => {
         eye.firstElementChild.className = `fas ${show ? 'fa-eye-slash' : 'fa-eye'}`;
         return;
     }
+    const exp = e.target.closest('[data-export]');
+    if (exp) { const [report, format] = exp.dataset.export.split(':'); return downloadExport(report, format, exp); }
     const nav = e.target.closest('[data-nav]');
     if (nav) return go(nav.dataset.nav);
     const edit = e.target.closest('[data-edit]');
@@ -180,6 +182,7 @@ document.addEventListener('click', e => {
     const act = e.target.closest('[data-act]');
     if (act) return runAction(act.dataset.act, Number(act.dataset.id));
 });
+document.addEventListener('change', e => { if (e.target.matches('[data-export-month]') && e.target.value) state.exportMonth = e.target.value; });
 window.addEventListener('popstate', () => state.user && go(location.hash.slice(1), { push: false }));
 $('#newBtn').addEventListener('click', () => VIEWS[state.view].onNew?.());
 $('#search').addEventListener('input', e => { state.query = e.target.value.trim().toLowerCase(); renderView(); });
@@ -187,6 +190,35 @@ $('#search').addEventListener('input', e => { state.query = e.target.value.trim(
 const matches = (...fields) => !state.query || fields.join(' ').toLowerCase().includes(state.query);
 const pill = (cls, text) => `<span class="badge ${cls}">${esc(text)}</span>`;
 const empty = text => `<p class="empty">${text}</p>`;
+
+// ===== EXPORTAÇÃO (Excel / PDF) =====
+function exportBar(report, label = 'Exportar') {
+    const btn = (format, icon, name) => `<button class="btn sm ghost" data-export="${report}:${format}"><i class="fas ${icon}"></i> ${name}</button>`;
+    return `<div class="export-bar"><span>${label}</span>
+        <input type="month" data-export-month value="${state.exportMonth}" aria-label="Mês do relatório">
+        ${btn('xlsx', 'fa-file-excel', 'Excel')}${btn('pdf', 'fa-file-pdf', 'PDF')}</div>`;
+}
+
+async function downloadExport(report, format, button) {
+    const icon = button.querySelector('i');
+    const original = icon.className;
+    button.disabled = true;
+    icon.className = 'fas fa-spinner fa-spin';
+    try {
+        const res = await fetch(`/api/export/${report}?format=${format}&month=${encodeURIComponent(state.exportMonth)}`, { credentials: 'same-origin' });
+        if (res.status === 401) { showLogin(); return; }
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Não foi possível gerar o arquivo.');
+        const name = (res.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || `relatorio.${format}`;
+        const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await res.blob()), download: name });
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+    } catch (err) {
+        toast(err.message, true);
+    } finally {
+        button.disabled = false;
+        icon.className = original;
+    }
+}
 
 // ===== DASHBOARD =====
 function renderDashboard() {
@@ -216,6 +248,7 @@ function renderDashboard() {
         : empty('Nenhum projeto com prazo definido.');
 
     return `
+        ${exportBar('resumo', 'Relatório do mês')}
         <div class="kpis">${cards}</div>
         <div class="row-2">
             <article class="card chart-card">
@@ -367,7 +400,7 @@ const paymentState = y => (y.paid_at ? 'pago' : y.due_date < isoToday() ? 'atras
 
 function renderFinance() {
     const c = state.summary.counts;
-    const totals = `<div class="kpis three">
+    const totals = exportBar('financeiro', 'Lançamentos do mês') + `<div class="kpis three">
         <article class="card kpi" style="--c:#16a34a"><span class="ico" style="background:#16a34a1f;color:#16a34a"><i class="fas fa-circle-check"></i></span><small>Recebido no mês</small><strong>${money(c.received_month)}</strong><span class="bar"></span></article>
         <article class="card kpi" style="--c:#2563eb"><span class="ico" style="background:#2563eb1f;color:#2563eb"><i class="fas fa-hourglass-half"></i></span><small>A receber</small><strong>${money(c.pending_total)}</strong><span class="bar"></span></article>
         <article class="card kpi" style="--c:#ef4444"><span class="ico" style="background:#ef44441f;color:#ef4444"><i class="fas fa-triangle-exclamation"></i></span><small>Em atraso</small><strong>${money(c.overdue_total)}</strong><span class="bar"></span></article>
