@@ -163,6 +163,16 @@ function renderView() {
 }
 
 document.addEventListener('click', e => {
+    const eye = e.target.closest('[data-eye]');
+    if (eye) {
+        const input = eye.parentElement.querySelector('input');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        eye.setAttribute('aria-pressed', show);
+        eye.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+        eye.firstElementChild.className = `fas ${show ? 'fa-eye-slash' : 'fa-eye'}`;
+        return;
+    }
     const nav = e.target.closest('[data-nav]');
     if (nav) return go(nav.dataset.nav);
     const edit = e.target.closest('[data-edit]');
@@ -449,7 +459,8 @@ const FORMS = {
         fields: record => [
             { key: 'name', label: 'Nome', required: true, full: true },
             { key: 'email', label: 'E-mail', type: 'email', required: true, full: true },
-            { key: 'password', label: record ? 'Nova senha (deixe em branco para manter)' : 'Senha (mín. 10 caracteres)', type: 'password', required: !record, full: true, noPrefill: true, minlength: 10, maxlength: 72 }
+            { key: 'password', label: record ? 'Nova senha (deixe em branco para manter)' : 'Senha (mín. 10 caracteres)', type: 'password', required: !record, full: true, noPrefill: true, minlength: 10, maxlength: 72 },
+            { key: 'password_confirm', label: record ? 'Confirmar nova senha' : 'Confirmar senha', type: 'password', required: !record, full: true, noPrefill: true, maxlength: 72 }
         ]
     },
     payments: {
@@ -480,6 +491,9 @@ function fieldHtml(f, value) {
     } else {
         const extra = ['min', 'max', 'step'].filter(a => f[a] !== undefined).map(a => `${a}="${f[a]}"`).join(' ');
         control = `<input id="${id}" name="${f.key}" type="${f.type || 'text'}" value="${esc(v)}" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} ${extra} ${attrs} ${req}>`;
+        if (f.type === 'password') {
+            control = `<div class="pw">${control}<button type="button" class="pw-eye" data-eye aria-label="Mostrar senha" aria-pressed="false"><i class="fas fa-eye"></i></button></div>`;
+        }
     }
     const optional = f.required || f.type === 'password' ? '' : ' <em>(opcional)</em>';
     return `<div class="field ${f.full ? 'full' : ''}"><label for="${id}">${f.label}${optional}</label>${control}</div>`;
@@ -508,11 +522,18 @@ $('#entityForm').addEventListener('submit', async e => {
     const err = $('#formError');
     err.hidden = true;
     const body = {};
+    let confirmation = '';
     for (const el of $$('#formFields [name]')) {
         if (el.required && !el.value.trim()) { err.textContent = `Preencha o campo "${el.labels[0].textContent.replace('(opcional)', '').trim()}".`; err.hidden = false; return el.focus(); }
+        if (el.name === 'password_confirm') { confirmation = el.value; continue; } // só confere; não vai para a API
         if (el.type === 'password' && !el.value) continue; // em edição, vazio mantém a senha atual
         if (el.minLength > 0 && el.value && el.value.length < el.minLength) { err.textContent = `A senha deve ter ao menos ${el.minLength} caracteres.`; err.hidden = false; return el.focus(); }
         body[el.name] = el.value;
+    }
+    if ($('#f_password_confirm') && (body.password ?? '') !== confirmation) {
+        err.textContent = 'As senhas não coincidem.';
+        err.hidden = false;
+        return $('#f_password_confirm').focus();
     }
     const btn = $('#formSave');
     btn.disabled = true;

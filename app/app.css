@@ -361,3 +361,9 @@ dialog::backdrop { background: rgba(4, 8, 16, .7); backdrop-filter: blur(6px); }
 .ai-box strong { display: block; margin-top: 10px; font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .ai-box .pre { white-space: pre-line; }
 .chips.inline { display: inline-flex; margin: 0; }
+
+/* Campo de senha com botão de olho */
+.pw { position: relative; }
+.pw input { padding-right: 46px; }
+.pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: var(--text-dim); }
+.pw-eye:hover, .pw-eye:focus-visible { color: var(--text); background: rgba(255, 255, 255, .08); }
