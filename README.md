@@ -29,7 +29,7 @@ Este repositório contém o código-fonte da landing page institucional da Carca
 - **Fontes:** [Inter (Google Fonts)](https://fonts.google.com/specimen/Inter)
 
 ### 🔐 Painel de gestão (`/app`)
-Área restrita com login para gerenciar **clientes, projetos, solicitações do site e financeiro**. As solicitações enviadas pelo formulário da landing page também são gravadas no painel.
+Área restrita com login para gerenciar **clientes, projetos, solicitações do site, financeiro e os cases exibidos na landing page** (aba *Cases*: criar, editar, ocultar, reordenar e enviar imagem). Os cards do `index.html` servem só de reserva caso a API esteja fora do ar. As solicitações enviadas pelo formulário da landing page também são gravadas no painel.
 
 **Arquitetura:** landing + painel estáticos na **Vercel**, API Node/Express (`server/`) no **Render** e banco Postgres no **Neon**. A Vercel repassa `/api/*` para o Render (`vercel.json`), então o cookie de sessão é do mesmo domínio.
 

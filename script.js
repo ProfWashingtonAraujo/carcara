@@ -214,6 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    loadCases();
+
     const myCarousel = document.querySelector('#testimonialCarousel');
     if (myCarousel) {
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -336,4 +338,44 @@ function animateNumbers() {
         
         updateCounter();
     });
+}
+
+// ===== CASES (gerenciados no painel) =====
+// Os cards do HTML servem de reserva: só são trocados se a API responder.
+const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function caseCard(c) {
+    const a = (name, value) => (value ? ` data-${name}="${escapeHtml(value)}"` : '');
+    return `
+        <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
+            <article class="project-card">
+                ${c.image ? `<img src="${escapeHtml(c.image)}" alt="Prévia do projeto ${escapeHtml(c.title)}" class="project-image" loading="lazy" decoding="async">` : ''}
+                <div class="project-card-body">
+                    <div class="project-card-header"><span class="project-language">${escapeHtml(c.category)}</span></div>
+                    <h3>${escapeHtml(c.title)}</h3>
+                    <p>${escapeHtml(c.description)}</p>
+                    <button class="project-detail-button" data-bs-toggle="modal" data-bs-target="#projectDetailModal"
+                        data-title="${escapeHtml(c.title)}" data-language="${escapeHtml(c.category)}"
+                        data-description="${escapeHtml(c.description)}"${a('details', c.details)}${a('image', c.image)}${a('github', c.github_url)}${a('demo', c.demo_url)}>Ler detalhes</button>
+                </div>
+            </article>
+        </div>`;
+}
+
+async function loadCases() {
+    const grid = document.getElementById('casesGrid');
+    if (!grid) return;
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch('/api/portfolio', { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return;
+        const cases = await res.json();
+        if (!Array.isArray(cases)) return;
+        grid.innerHTML = cases.map(caseCard).join('');
+        grid.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    } catch {
+        // sem API (ex.: abrindo o index.html direto): mantém os cards do HTML
+    }
 }

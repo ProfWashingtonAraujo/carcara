@@ -13,6 +13,7 @@ const LABELS = {
     client: { prospect: 'Prospect', ativo: 'Ativo', inativo: 'Inativo' },
     project: { proposta: 'Proposta', em_andamento: 'Em andamento', pausado: 'Pausado', concluido: 'Concluído', cancelado: 'Cancelado' },
     stage: { diagnostico: 'Diagnóstico', planejamento: 'Planejamento', desenvolvimento: 'Desenvolvimento', evolucao: 'Evolução' },
+    case: { publicado: 'Publicado', oculto: 'Oculto' },
     lead: { novo: 'Novo', contato: 'Em contato', convertido: 'Convertido', descartado: 'Descartado' }
 };
 const options = map => Object.entries(map).map(([value, label]) => ({ value, label }));
@@ -35,22 +36,23 @@ async function api(path, { method = 'GET', body } = {}) {
 }
 
 // ===== ESTADO =====
-const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], summary: null, view: 'dashboard', query: '' };
+const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], cases: [], summary: null, view: 'dashboard', query: '' };
 
 const VIEWS = {
     dashboard: { subtitle: 'Visão geral do seu negócio.', render: renderDashboard },
     clientes: { subtitle: 'Quem você atende.', render: renderClients, newLabel: 'Novo cliente', onNew: () => openForm('clients') },
     projetos: { subtitle: 'Acompanhe etapas, prazos e progresso.', render: renderProjects, newLabel: 'Novo projeto', onNew: () => openForm('projects') },
+    cases: { subtitle: 'Projetos exibidos na seção Cases do site.', render: renderCases, newLabel: 'Novo case', onNew: () => openForm('cases') },
     solicitacoes: { subtitle: 'Pedidos recebidos pelo formulário do site.', render: renderLeads },
     financeiro: { subtitle: 'Recebimentos e valores a receber.', render: renderFinance, newLabel: 'Novo lançamento', onNew: () => openForm('payments') },
     usuarios: { subtitle: 'Quem tem acesso a este painel.', render: renderUsers, newLabel: 'Novo usuário', onNew: () => openForm('users') }
 };
 
 async function loadAll() {
-    const [clients, projects, payments, leads, users, summary] = await Promise.all([
-        api('/clients'), api('/projects'), api('/payments'), api('/leads'), api('/users'), api('/summary')
+    const [clients, projects, payments, leads, users, cases, summary] = await Promise.all([
+        api('/clients'), api('/projects'), api('/payments'), api('/leads'), api('/users'), api('/cases'), api('/summary')
     ]);
-    Object.assign(state, { clients, projects, payments, leads, users, summary });
+    Object.assign(state, { clients, projects, payments, leads, users, cases, summary });
     $('#loadError').hidden = true;
     renderAll();
 }
@@ -363,6 +365,23 @@ function renderFinance() {
         <tbody>${rows || '<tr><td colspan="5" class="empty">Nenhum lançamento encontrado.</td></tr>'}</tbody></table></div></div>`;
 }
 
+// ===== CASES DO SITE =====
+const caseImage = c => (c.has_image ? `/api/cases/${c.id}/image?v=${c.image_v}` : c.image_path ? `../${c.image_path}` : '');
+
+function renderCases() {
+    const list = state.cases.filter(c => matches(c.title, c.category, c.description));
+    if (!state.cases.length) return empty('Nenhum case cadastrado. Clique em “Novo case”.');
+    if (!list.length) return empty('Nenhum case encontrado.');
+    return `<div class="grid-3">${list.map(c => `
+        <button class="card client case-card" data-edit="cases:${c.id}">
+            <div class="case-img">${caseImage(c) ? `<img src="${esc(caseImage(c))}" alt="" loading="lazy">` : '<i class="fas fa-image"></i>'}</div>
+            <div class="client-top"><div><strong>${esc(c.title)}</strong><span>${esc(c.category)}</span></div>
+                ${pill(c.status === 'publicado' ? 'ok' : 'muted', LABELS.case[c.status])}</div>
+            <small>Ordem ${c.position}${c.demo_url ? ` · ${esc(c.demo_url.replace(/^https?:\/\//, ''))}` : ''}</small>
+        </button>`).join('')}</div>
+        <p class="hint">Os cases publicados aparecem no site na ordem indicada. Alterações valem em até 1 minuto.</p>`;
+}
+
 // ===== USUÁRIOS =====
 function renderUsers() {
     const list = state.users.filter(u => matches(u.name, u.email));
@@ -425,6 +444,20 @@ const FORMS = {
             { key: 'description', label: 'Descrição', type: 'textarea', full: true }
         ]
     },
+    cases: {
+        title: 'case', list: () => state.cases,
+        fields: () => [
+            { key: 'title', label: 'Título', required: true, full: true },
+            { key: 'category', label: 'Categoria', required: true, placeholder: 'Ex.: Gestão financeira' },
+            { key: 'status', label: 'Visibilidade', type: 'select', options: options(LABELS.case), def: 'publicado', required: true },
+            { key: 'description', label: 'Descrição curta (aparece no card)', type: 'textarea', required: true, full: true },
+            { key: 'details', label: 'Detalhes (aparecem ao abrir o case)', type: 'textarea', full: true },
+            { key: 'demo_url', label: 'Link online', type: 'url', placeholder: 'https://...vercel.app', full: true },
+            { key: 'github_url', label: 'Link do GitHub', type: 'url', placeholder: 'https://github.com/...', full: true },
+            { key: 'position', label: 'Ordem no site', type: 'number', min: 0, step: 1, def: state.cases.length + 1 },
+            { key: 'image', label: 'Imagem de capa (será reduzida automaticamente)', type: 'file', accept: 'image/*' }
+        ]
+    },
     users: {
         title: 'usuário', list: () => state.users,
         fields: record => [
@@ -456,13 +489,16 @@ function fieldHtml(f, value) {
     let control;
     if (f.type === 'select') {
         control = `<select id="${id}" name="${f.key}" ${req}>${f.options.map(o => `<option value="${esc(o.value)}" ${String(o.value) === String(v) ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
+    } else if (f.type === 'file') {
+        const current = editing?.id ? caseImage(state.cases.find(r => r.id === editing.id) || {}) : '';
+        control = `${current ? `<img class="file-preview" src="${esc(current)}" alt="Imagem atual">` : ''}<input id="${id}" name="${f.key}" type="file" accept="${f.accept}">`;
     } else if (f.type === 'textarea') {
         control = `<textarea id="${id}" name="${f.key}" rows="3">${esc(v)}</textarea>`;
     } else {
         const extra = ['min', 'max', 'step'].filter(a => f[a] !== undefined).map(a => `${a}="${f[a]}"`).join(' ');
         control = `<input id="${id}" name="${f.key}" type="${f.type || 'text'}" value="${esc(v)}" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} ${extra} ${attrs} ${req}>`;
     }
-    const optional = f.required || f.type === 'password' ? '' : ' <em>(opcional)</em>';
+    const optional = f.required || f.type === 'password' || f.type === 'file' ? '' : ' <em>(opcional)</em>';
     return `<div class="field ${f.full ? 'full' : ''}"><label for="${id}">${f.label}${optional}</label>${control}</div>`;
 }
 
@@ -489,7 +525,9 @@ $('#entityForm').addEventListener('submit', async e => {
     const err = $('#formError');
     err.hidden = true;
     const body = {};
+    let file = null;
     for (const el of $$('#formFields [name]')) {
+        if (el.type === 'file') { file = el.files[0] || null; continue; }
         if (el.required && !el.value.trim()) { err.textContent = `Preencha o campo "${el.labels[0].textContent.replace('(opcional)', '').trim()}".`; err.hidden = false; return el.focus(); }
         if (el.type === 'password' && !el.value) continue; // em edição, vazio mantém a senha atual
         if (el.minLength > 0 && el.value && el.value.length < el.minLength) { err.textContent = `A senha deve ter ao menos ${el.minLength} caracteres.`; err.hidden = false; return el.focus(); }
@@ -500,6 +538,7 @@ $('#entityForm').addEventListener('submit', async e => {
     try {
         const path = `/${editing.kind}${editing.id ? `/${editing.id}` : ''}`;
         const saved = await api(path, { method: editing.id ? 'PUT' : 'POST', body });
+        if (file) await uploadCaseImage(saved.id, file);
         if (editing.kind === 'users' && editing.id === state.user.id) { // atualiza nome/e-mail exibidos
             state.user = { ...state.user, name: saved.name, email: saved.email };
             showApp();
@@ -515,8 +554,22 @@ $('#entityForm').addEventListener('submit', async e => {
     }
 });
 
+// Reduz para no máximo 1000 px de largura e envia em WebP (JPEG nos navegadores sem suporte)
+async function uploadCaseImage(id, file) {
+    const bitmap = await createImageBitmap(file).catch(() => { throw new Error('Não foi possível ler a imagem escolhida.'); });
+    const scale = Math.min(1, 1000 / bitmap.width);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    let blob = await new Promise(r => canvas.toBlob(r, 'image/webp', 0.82));
+    if (blob?.type !== 'image/webp') blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.82));
+    const res = await fetch(`/api/cases/${id}/image`, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': blob.type }, body: blob });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Falha ao enviar a imagem.');
+}
+
 $('#formDelete').addEventListener('click', async () => {
-    const what = { clients: 'este cliente (os projetos dele ficam sem cliente)', projects: 'este projeto e todos os seus lançamentos financeiros', payments: 'este lançamento', users: 'este usuário (ele perde o acesso imediatamente)' }[editing.kind];
+    const what = { clients: 'este cliente (os projetos dele ficam sem cliente)', projects: 'este projeto e todos os seus lançamentos financeiros', payments: 'este lançamento', users: 'este usuário (ele perde o acesso imediatamente)', cases: 'este case (ele sai do site)' }[editing.kind];
     if (!confirm(`Excluir ${what}? Esta ação não pode ser desfeita.`)) return;
     try {
         await api(`/${editing.kind}/${editing.id}`, { method: 'DELETE' });
