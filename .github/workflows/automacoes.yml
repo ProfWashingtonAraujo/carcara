@@ -18,6 +18,9 @@ defaults:
 
 env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  AI_PROVIDER: ${{ vars.AI_PROVIDER }}
+  AI_API_KEY: ${{ secrets.AI_API_KEY }}
+  AI_MODEL: ${{ vars.AI_MODEL }}
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
   SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -58,7 +61,7 @@ jobs:
       - name: Executar
         run: |
           case "${{ steps.tarefa.outputs.nome }}" in
-            triage) if [ -z "$ANTHROPIC_API_KEY" ]; then echo "ANTHROPIC_API_KEY não configurada: triagem ignorada."; else python -m carcara triage; fi ;;
+            triage) if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$AI_API_KEY" ]; then echo "Nenhuma chave de IA configurada (AI_API_KEY ou ANTHROPIC_API_KEY): triagem ignorada."; else python -m carcara triage; fi ;;
             report) python -m carcara report --email ;;
             *)      python -m carcara ${{ steps.tarefa.outputs.nome }} ;;
           esac

@@ -1,6 +1,7 @@
 import json
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from carcara import triage
@@ -28,7 +29,7 @@ def test_prompt_wraps_untrusted_text():
 
 def test_analyze_sends_schema_and_fallback():
     client = FakeClient()
-    assert triage.analyze(LEAD, client) == RESULT
+    assert triage.analyze_claude(LEAD, client) == RESULT
     call = client.calls[0]
     assert call["output_config"]["format"]["schema"]["additionalProperties"] is False
     assert call["fallbacks"] == "default" and "server-side-fallback-2026-07-01" in call["betas"]
@@ -37,9 +38,50 @@ def test_analyze_sends_schema_and_fallback():
 
 def test_refusal_raises():
     with pytest.raises(RuntimeError):
-        triage.analyze(LEAD, FakeClient(stop_reason="refusal"))
+        triage.analyze_claude(LEAD, FakeClient(stop_reason="refusal"))
 
 
 def test_unknown_category_rejected():
     with pytest.raises(ValueError):
-        triage.analyze(LEAD, FakeClient(text=json.dumps({**RESULT, "category": "hack"})))
+        triage.analyze_claude(LEAD, FakeClient(text=json.dumps({**RESULT, "category": "hack"})))
+
+
+def mock(handler):
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_openai_compatible_success(monkeypatch):
+    monkeypatch.setenv("AI_API_KEY", "k")
+    seen = {}
+
+    def handler(request):
+        seen["url"], seen["auth"], seen["body"] = str(request.url), request.headers["authorization"], json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(RESULT)}}]})
+
+    assert triage.analyze_openai_compatible(LEAD, "groq", mock(handler)) == RESULT
+    assert seen["url"] == "https://api.groq.com/openai/v1/chat/completions" and seen["auth"] == "Bearer k"
+    assert seen["body"]["messages"][1]["content"].startswith("<pedido>")
+
+
+def test_rate_limit_is_distinguished(monkeypatch):
+    monkeypatch.setenv("AI_API_KEY", "k")
+    with pytest.raises(triage.RateLimited):
+        triage.analyze_openai_compatible(LEAD, "groq", mock(lambda r: httpx.Response(429)))
+
+
+def test_invalid_model_output_rejected(monkeypatch):
+    monkeypatch.setenv("AI_API_KEY", "k")
+    bad = {**RESULT, "priority": "urgente"}
+    with pytest.raises(ValueError):
+        triage.analyze_openai_compatible(LEAD, "groq", mock(lambda r: httpx.Response(200, json={"choices": [{"message": {"content": json.dumps(bad)}}]})))
+
+
+def test_provider_selection(monkeypatch):
+    for k in ("AI_PROVIDER", "ANTHROPIC_API_KEY", "AI_BASE_URL"):
+        monkeypatch.delenv(k, raising=False)
+    assert triage.provider() == "groq"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    assert triage.provider() == "claude"
+    monkeypatch.setenv("AI_PROVIDER", "nada")
+    with pytest.raises(SystemExit):
+        triage.provider()
