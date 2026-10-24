@@ -180,6 +180,23 @@ document.addEventListener('DOMContentLoaded', function() {
             interval: reduceMotion ? false : 5000,
             wrap: true
         });
+
+        // slides com textos de tamanhos diferentes mudavam a altura da seção a cada troca e a página "tremia" no celular
+        const inner = myCarousel.querySelector('.carousel-inner');
+        const equalizeSlides = () => {
+            inner.style.minHeight = '';
+            let tallest = 0;
+            inner.querySelectorAll('.carousel-item').forEach(item => {
+                const wasActive = item.classList.contains('active');
+                if (!wasActive) item.style.cssText = 'display:block;visibility:hidden;position:absolute;width:100%';
+                tallest = Math.max(tallest, item.offsetHeight);
+                if (!wasActive) item.style.cssText = '';
+            });
+            inner.style.minHeight = tallest + 'px';
+        };
+        equalizeSlides();
+        window.addEventListener('load', equalizeSlides);
+        window.addEventListener('resize', equalizeSlides);
     }
 });
 

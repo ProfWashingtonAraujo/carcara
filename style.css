@@ -669,6 +669,10 @@ section {
     margin: 1rem;
 }
 
+#testimonialCarousel {
+    overflow-anchor: none;
+}
+
 .testimonial-text {
     font-style: italic;
     margin-bottom: 1.5rem;
