@@ -15,7 +15,6 @@ python -m carcara <comando>
 | `report [--month 2026-10] [--email]` | Relatório mensal em Excel e PDF (`python/out/`): recebido, a receber, atrasos, projetos. Padrão: mês anterior. |
 | `alerts [--days 3] [--lead-hours 24] [--dry-run]` | Resumo de cobranças em atraso ou a vencer, prazos de projetos e solicitações sem resposta. |
 | `triage [--limit 20] [--dry-run]` | Analisa com a Claude as solicitações novas (categoria, complexidade, prioridade, resumo, próximos passos e rascunho de resposta). O resultado aparece no card da solicitação, no painel. |
-| `screenshots [--id N] [--all]` | Tira screenshot do site de cada case e grava como imagem de capa. Sem flags, só cases que ainda não têm imagem. |
 | `serve [--port 8000]` | Diagnóstico de sites: página em `/` e API em `POST /diagnostico`. |
 
 ## Avisos e relatórios

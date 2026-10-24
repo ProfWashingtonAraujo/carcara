@@ -1,7 +1,7 @@
 import argparse
 from datetime import date
 
-from . import alerts, db, notify, reports, screenshots, triage
+from . import alerts, db, notify, reports, triage
 from .config import OUT_DIR
 
 
@@ -28,10 +28,6 @@ def main() -> None:
     p.add_argument("--limit", type=int, default=20)
     p.add_argument("--dry-run", action="store_true", help="Analisa mas não grava")
 
-    p = sub.add_parser("screenshots", help="Atualiza a imagem dos cases a partir do site publicado")
-    p.add_argument("--id", type=int, help="Só este case")
-    p.add_argument("--all", action="store_true", help="Refaz também os cases que já têm imagem")
-
     p = sub.add_parser("serve", help="Sobe o serviço de diagnóstico de sites")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
@@ -55,8 +51,6 @@ def main() -> None:
             alerts.run(conn, args.days, args.lead_hours, args.dry_run)
         elif args.cmd == "triage":
             triage.run(conn, args.limit, args.dry_run)
-        elif args.cmd == "screenshots":
-            screenshots.run(conn, args.id, args.all)
 
 
 if __name__ == "__main__":

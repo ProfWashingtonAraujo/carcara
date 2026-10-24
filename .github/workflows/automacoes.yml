@@ -10,7 +10,7 @@ on:
       tarefa:
         description: Tarefa a executar
         type: choice
-        options: [alerts, triage, report, screenshots]
+        options: [alerts, triage, report]
 
 defaults:
   run:
@@ -53,10 +53,6 @@ jobs:
             schedule:'0 12 1 * *')   echo "nome=report" >> "$GITHUB_OUTPUT" ;;
             *)                       echo "nome=${{ inputs.tarefa }}" >> "$GITHUB_OUTPUT" ;;
           esac
-
-      - name: Instalar navegador (screenshots)
-        if: steps.tarefa.outputs.nome == 'screenshots'
-        run: playwright install --with-deps chromium
 
       - name: Executar
         run: |

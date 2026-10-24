@@ -173,49 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
         currentYear.textContent = new Date().getFullYear();
     }
 
-    const projectDetailModal = document.getElementById('projectDetailModal');
-    if (projectDetailModal) {
-        projectDetailModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            if (!button) return;
-
-            const title = button.getAttribute('data-title') || 'Detalhes do projeto';
-            const language = button.getAttribute('data-language') || 'Projeto';
-            const image = button.getAttribute('data-image') || '';
-            const description = button.getAttribute('data-description') || '';
-            const details = button.getAttribute('data-details') || '';
-            const github = button.getAttribute('data-github');
-            const demo = button.getAttribute('data-demo');
-
-            document.getElementById('projectDetailModalLabel').textContent = title;
-            document.getElementById('projectDetailLanguage').textContent = language;
-            document.getElementById('projectDetailDescription').textContent = description;
-            document.getElementById('projectDetailText').textContent = details;
-
-            const imageElement = document.getElementById('projectDetailImage');
-            imageElement.src = image;
-            imageElement.alt = `Prévia do projeto ${title}`;
-
-            const githubLink = document.getElementById('projectDetailGithub');
-            if (github) {
-                githubLink.href = github;
-                githubLink.classList.remove('d-none');
-            } else {
-                githubLink.classList.add('d-none');
-            }
-
-            const demoLink = document.getElementById('projectDetailDemo');
-            if (demo) {
-                demoLink.href = demo;
-                demoLink.classList.remove('d-none');
-            } else {
-                demoLink.classList.add('d-none');
-            }
-        });
-    }
-
-    loadCases();
-
     const myCarousel = document.querySelector('#testimonialCarousel');
     if (myCarousel) {
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -251,7 +208,7 @@ const observer = new IntersectionObserver(function(entries) {
 
 // Observar elementos para animação
 document.addEventListener('DOMContentLoaded', function() {
-    const elementsToAnimate = document.querySelectorAll('.service-card, .project-card, .portfolio-item, .testimonial-card, .reveal, .hero-metrics');
+    const elementsToAnimate = document.querySelectorAll('.service-card, .testimonial-card, .reveal, .hero-metrics');
     elementsToAnimate.forEach(element => {
         observer.observe(element);
     });
@@ -338,44 +295,4 @@ function animateNumbers() {
         
         updateCounter();
     });
-}
-
-// ===== CASES (gerenciados no painel) =====
-// Os cards do HTML servem de reserva: só são trocados se a API responder.
-const escapeHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-function caseCard(c) {
-    const a = (name, value) => (value ? ` data-${name}="${escapeHtml(value)}"` : '');
-    return `
-        <div class="col-md-6 col-lg-4 reveal reveal-fade-up">
-            <article class="project-card">
-                ${c.image ? `<img src="${escapeHtml(c.image)}" alt="Prévia do projeto ${escapeHtml(c.title)}" class="project-image" loading="lazy" decoding="async">` : ''}
-                <div class="project-card-body">
-                    <div class="project-card-header"><span class="project-language">${escapeHtml(c.category)}</span></div>
-                    <h3>${escapeHtml(c.title)}</h3>
-                    <p>${escapeHtml(c.description)}</p>
-                    <button class="project-detail-button" data-bs-toggle="modal" data-bs-target="#projectDetailModal"
-                        data-title="${escapeHtml(c.title)}" data-language="${escapeHtml(c.category)}"
-                        data-description="${escapeHtml(c.description)}"${a('details', c.details)}${a('image', c.image)}${a('github', c.github_url)}${a('demo', c.demo_url)}>Ler detalhes</button>
-                </div>
-            </article>
-        </div>`;
-}
-
-async function loadCases() {
-    const grid = document.getElementById('casesGrid');
-    if (!grid) return;
-    try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 8000);
-        const res = await fetch('/api/portfolio', { signal: controller.signal });
-        clearTimeout(timer);
-        if (!res.ok) return;
-        const cases = await res.json();
-        if (!Array.isArray(cases)) return;
-        grid.innerHTML = cases.map(caseCard).join('');
-        grid.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-    } catch {
-        // sem API (ex.: abrindo o index.html direto): mantém os cards do HTML
-    }
 }

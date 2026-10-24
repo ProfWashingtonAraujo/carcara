@@ -17,7 +17,7 @@ Este repositório contém o código-fonte da landing page institucional da Carca
 ### 🚀 Funcionalidades
 - **Design Responsivo:** Adaptado para todos os tamanhos de tela (Bootstrap 5.3).
 - **Animações Fluidas:** Efeitos de revelação ao rolar a página (Intersection Observer API).
-- **Componentes Interativos:** Modal de detalhes de projetos, carrossel de depoimentos e contador de métricas.
+- **Componentes Interativos:** carrossel de depoimentos e contador de métricas.
 - **Formulário de Contato:** Integrado com [FormSubmit](https://formsubmit.co/) para recebimento de leads.
 - **Efeitos Visuais:** Cursor glow no hero, barra de progresso de leitura e partículas dinâmicas.
 
@@ -29,11 +29,11 @@ Este repositório contém o código-fonte da landing page institucional da Carca
 - **Fontes:** [Inter (Google Fonts)](https://fonts.google.com/specimen/Inter)
 
 ### 🔐 Painel de gestão (`/app`)
-Área restrita com login para gerenciar **clientes, projetos, solicitações do site, financeiro e os cases exibidos na landing page** (aba *Cases*: criar, editar, ocultar, reordenar e enviar imagem). Os cards do `index.html` servem só de reserva caso a API esteja fora do ar. As solicitações enviadas pelo formulário da landing page também são gravadas no painel.
+Área restrita com login para gerenciar **clientes, projetos, solicitações do site e financeiro**. As solicitações enviadas pelo formulário da landing page também são gravadas no painel.
 
 **Arquitetura:** landing + painel estáticos na **Vercel**, API Node/Express (`server/`) no **Render** e banco Postgres no **Neon**. A Vercel repassa `/api/*` para o Render (`vercel.json`), então o cookie de sessão é do mesmo domínio.
 
-**Automações em Python** (`python/`): relatório mensal, alertas de cobrança, triagem de solicitações com IA, screenshots dos cases e um diagnóstico de sites. Veja [python/README.md](python/README.md).
+**Automações em Python** (`python/`): relatório mensal, alertas de cobrança, triagem de solicitações com IA e um diagnóstico de sites. Veja [python/README.md](python/README.md).
 
 **Rodar localmente**
 ```bash

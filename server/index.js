@@ -54,10 +54,6 @@ const idParam = req => {
     return id;
 };
 
-const CASE_COLS = `s.id, s.title, s.category, s.description, s.details, s.github_url, s.demo_url, s.position, s.status, s.image_path,
-    (s.image IS NOT NULL) AS has_image, COALESCE(extract(epoch FROM s.image_at)::bigint, 0) AS image_v`;
-const CASE_SELECT = `SELECT ${CASE_COLS} FROM cases s`;
-
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Valida e normaliza o corpo conforme o esquema do recurso
@@ -84,10 +80,6 @@ function parseBody(schema, body, { partial = false } = {}) {
                 break;
             case 'date':
                 if (typeof v !== 'string' || !DATE.test(v) || Number.isNaN(Date.parse(v))) throw new HttpError(400, `Data inválida: ${rule.label || key}`);
-                break;
-            case 'url':
-                if (typeof v !== 'string' || !/^https?:\/\/[^\s]+$/i.test(v.trim()) || v.length > 300) throw new HttpError(400, `Link inválido: ${rule.label || key}`);
-                v = v.trim();
                 break;
             case 'email':
                 if (typeof v !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || v.length > 200) throw new HttpError(400, 'E-mail inválido');
@@ -170,25 +162,6 @@ app.post('/api/leads', leadLimiter, wrap(async (req, res) => {
     res.status(201).json({ ok: true });
 }));
 
-// ===== Cases do portfólio (público) =====
-const imageUrl = c => (c.has_image ? `/api/portfolio/${c.id}/image?v=${c.image_v}` : c.image_path || null);
-
-app.get('/api/portfolio', wrap(async (req, res) => {
-    const { rows } = await pool.query(`${CASE_SELECT} WHERE s.status = 'publicado' ORDER BY s.position, s.id`);
-    res.set('Cache-Control', 'public, max-age=60');
-    res.json(rows.map(c => ({
-        id: c.id, title: c.title, category: c.category, description: c.description, details: c.details,
-        github_url: c.github_url, demo_url: c.demo_url, image: imageUrl(c)
-    })));
-}));
-
-app.get('/api/portfolio/:id/image', wrap(async (req, res) => {
-    const { rows } = await pool.query(`SELECT image, image_mime FROM cases WHERE id = $1 AND status = 'publicado' AND image IS NOT NULL`, [idParam(req)]);
-    if (!rows[0]) throw new HttpError(404, 'Imagem não encontrada');
-    res.set({ 'Content-Type': rows[0].image_mime, 'Cache-Control': 'public, max-age=86400' });
-    res.send(rows[0].image);
-}));
-
 // ===== CRUD autenticado =====
 const api = express.Router();
 api.use(requireAuth);
@@ -197,7 +170,6 @@ const STATUS_CLIENT = ['prospect', 'ativo', 'inativo'];
 const STATUS_PROJECT = ['proposta', 'em_andamento', 'pausado', 'concluido', 'cancelado'];
 const STAGES = ['diagnostico', 'planejamento', 'desenvolvimento', 'evolucao'];
 const STATUS_LEAD = ['novo', 'contato', 'convertido', 'descartado'];
-const STATUS_CASE = ['publicado', 'oculto'];
 
 const RESOURCES = {
     clients: {
@@ -242,21 +214,6 @@ const RESOURCES = {
                  FROM payments y JOIN projects p ON p.id = y.project_id LEFT JOIN clients c ON c.id = p.client_id`,
         one: 'WHERE y.id = $1',
         order: 'ORDER BY (y.paid_at IS NOT NULL), y.due_date ASC'
-    },
-    cases: {
-        schema: {
-            title: { required: true, label: 'Título', max: 120 },
-            category: { required: true, label: 'Categoria', max: 60 },
-            description: { required: true, label: 'Descrição curta', max: 300 },
-            details: { max: 1500, label: 'Detalhes' },
-            github_url: { type: 'url', label: 'Link do GitHub' },
-            demo_url: { type: 'url', label: 'Link online' },
-            position: { type: 'int', min: 0, max: 9999, label: 'Ordem' },
-            status: { enum: STATUS_CASE, label: 'Visibilidade' }
-        },
-        select: CASE_SELECT,
-        one: 'WHERE s.id = $1',
-        order: 'ORDER BY s.position, s.id'
     },
     leads: {
         schema: { status: { enum: STATUS_LEAD, label: 'Status' } },
@@ -323,20 +280,7 @@ api.delete('/users/:id', wrap(async (req, res) => {
     res.json({ ok: true });
 }));
 
-const TABLES = { clients: 'clients', projects: 'projects', payments: 'payments', cases: 'cases', leads: 'leads' };
-// Imagem do case (guardada no banco; o painel já envia reduzida)
-const IMAGE_TYPES = { 'image/webp': buf => buf.subarray(0, 4).toString() === 'RIFF' && buf.subarray(8, 12).toString() === 'WEBP', 'image/jpeg': buf => buf[0] === 0xff && buf[1] === 0xd8 };
-
-api.put('/cases/:id/image', express.raw({ type: Object.keys(IMAGE_TYPES), limit: '1mb' }), wrap(async (req, res) => {
-    const id = idParam(req);
-    const mime = req.get('content-type');
-    if (!Buffer.isBuffer(req.body) || !req.body.length || !IMAGE_TYPES[mime]?.(req.body)) throw new HttpError(400, 'Envie uma imagem WebP ou JPEG de até 1 MB.');
-    const { rowCount } = await pool.query('UPDATE cases SET image = $1, image_mime = $2, image_at = now() WHERE id = $3', [req.body, mime, id]);
-    if (!rowCount) throw new HttpError(404, 'Registro não encontrado');
-    const { rows } = await pool.query(`${CASE_SELECT} WHERE s.id = $1`, [id]);
-    res.json(rows[0]);
-}));
-
+const TABLES = { clients: 'clients', projects: 'projects', payments: 'payments', leads: 'leads' };
 for (const [name, r] of Object.entries(RESOURCES)) {
     const table = TABLES[name];
 
