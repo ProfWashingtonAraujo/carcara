@@ -159,13 +159,13 @@ button.card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(0,
 .progress i { display: block; height: 100%; background: var(--orange); border-radius: 99px; }
 
 .mini-proj strong, .proj strong, .client strong { display: block; font-size: .92rem; }
-.mini-proj span, .proj > span, .client .client-top span { font-size: .78rem; color: var(--muted); }
+.mini-proj span, .proj > span, .client .client-top > div span { font-size: .78rem; color: var(--muted); }
 .mini-proj small, .proj small { font-size: .74rem; color: var(--muted); }
 .mini-proj.late { box-shadow: inset 0 0 0 2px #fca5a5, 0 8px 24px rgba(0, 0, 0, .18); }
 
 .client .client-top { display: flex; gap: 12px; align-items: center; }
 .client .client-top > div { flex: 1; min-width: 0; }
-.client .client-top strong, .client .client-top span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.client .client-top > div strong, .client .client-top > div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 .client .meta { list-style: none; margin: 14px 0 10px; display: grid; gap: 6px; font-size: .8rem; color: var(--muted); }
 .client .meta i { width: 16px; color: var(--orange); margin-right: 6px; }
 .client .meta li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -204,6 +204,8 @@ td.num { font-weight: 600; }
 .tact { white-space: nowrap; text-align: right; }
 .icon-sm { width: 32px; height: 32px; border-radius: 10px; background: #f1f3f7; color: var(--ink); margin-left: 4px; }
 .icon-sm:hover { background: var(--orange); color: #fff; }
+
+.hint { color: var(--text-dim); font-size: .8rem; margin-top: 16px; }
 
 /* ===== Botões e formulários ===== */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 22px; border-radius: 999px; font-weight: 600; font-size: .88rem; transition: transform .15s, background .2s; }

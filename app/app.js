@@ -35,21 +35,22 @@ async function api(path, { method = 'GET', body } = {}) {
 }
 
 // ===== ESTADO =====
-const state = { user: null, clients: [], projects: [], payments: [], leads: [], summary: null, view: 'dashboard', query: '' };
+const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], summary: null, view: 'dashboard', query: '' };
 
 const VIEWS = {
     dashboard: { subtitle: 'Visão geral do seu negócio.', render: renderDashboard },
     clientes: { subtitle: 'Quem você atende.', render: renderClients, newLabel: 'Novo cliente', onNew: () => openForm('clients') },
     projetos: { subtitle: 'Acompanhe etapas, prazos e progresso.', render: renderProjects, newLabel: 'Novo projeto', onNew: () => openForm('projects') },
     solicitacoes: { subtitle: 'Pedidos recebidos pelo formulário do site.', render: renderLeads },
-    financeiro: { subtitle: 'Recebimentos e valores a receber.', render: renderFinance, newLabel: 'Novo lançamento', onNew: () => openForm('payments') }
+    financeiro: { subtitle: 'Recebimentos e valores a receber.', render: renderFinance, newLabel: 'Novo lançamento', onNew: () => openForm('payments') },
+    usuarios: { subtitle: 'Quem tem acesso a este painel.', render: renderUsers, newLabel: 'Novo usuário', onNew: () => openForm('users') }
 };
 
 async function loadAll() {
-    const [clients, projects, payments, leads, summary] = await Promise.all([
-        api('/clients'), api('/projects'), api('/payments'), api('/leads'), api('/summary')
+    const [clients, projects, payments, leads, users, summary] = await Promise.all([
+        api('/clients'), api('/projects'), api('/payments'), api('/leads'), api('/users'), api('/summary')
     ]);
-    Object.assign(state, { clients, projects, payments, leads, summary });
+    Object.assign(state, { clients, projects, payments, leads, users, summary });
     $('#loadError').hidden = true;
     renderAll();
 }
@@ -348,6 +349,20 @@ function renderFinance() {
         <tbody>${rows || '<tr><td colspan="5" class="empty">Nenhum lançamento encontrado.</td></tr>'}</tbody></table></div></div>`;
 }
 
+// ===== USUÁRIOS =====
+function renderUsers() {
+    const list = state.users.filter(u => matches(u.name, u.email));
+    if (!list.length) return empty('Nenhum usuário encontrado.');
+    return `<div class="grid-3">${list.map(u => `
+        <button class="card client" data-edit="users:${u.id}">
+            <div class="client-top"><span class="mini-av lg">${esc(u.name.charAt(0).toUpperCase())}</span>
+                <div><strong>${esc(u.name)}</strong><span>${esc(u.email)}</span></div>
+                ${u.id === state.user.id ? pill('info', 'Você') : ''}</div>
+            <small>Criado em ${new Date(u.created_at).toLocaleDateString('pt-BR')}</small>
+        </button>`).join('')}</div>
+        <p class="hint">Todos os usuários têm acesso total ao painel. Senhas ficam criptografadas e não podem ser consultadas.</p>`;
+}
+
 // ===== AÇÕES RÁPIDAS =====
 async function runAction(act, id) {
     try {
@@ -396,6 +411,14 @@ const FORMS = {
             { key: 'description', label: 'Descrição', type: 'textarea', full: true }
         ]
     },
+    users: {
+        title: 'usuário', list: () => state.users,
+        fields: record => [
+            { key: 'name', label: 'Nome', required: true, full: true },
+            { key: 'email', label: 'E-mail', type: 'email', required: true, full: true },
+            { key: 'password', label: record ? 'Nova senha (deixe em branco para manter)' : 'Senha (mín. 10 caracteres)', type: 'password', required: !record, full: true, noPrefill: true, minlength: 10, maxlength: 72 }
+        ]
+    },
     payments: {
         title: 'lançamento', list: () => state.payments,
         fields: () => [
@@ -415,6 +438,7 @@ function fieldHtml(f, value) {
     const id = `f_${f.key}`;
     const v = value ?? f.def ?? '';
     const req = f.required ? 'required' : '';
+    const attrs = [f.minlength && `minlength="${f.minlength}"`, f.maxlength && `maxlength="${f.maxlength}"`, f.type === 'password' && 'autocomplete="new-password"'].filter(Boolean).join(' ');
     let control;
     if (f.type === 'select') {
         control = `<select id="${id}" name="${f.key}" ${req}>${f.options.map(o => `<option value="${esc(o.value)}" ${String(o.value) === String(v) ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
@@ -422,9 +446,10 @@ function fieldHtml(f, value) {
         control = `<textarea id="${id}" name="${f.key}" rows="3">${esc(v)}</textarea>`;
     } else {
         const extra = ['min', 'max', 'step'].filter(a => f[a] !== undefined).map(a => `${a}="${f[a]}"`).join(' ');
-        control = `<input id="${id}" name="${f.key}" type="${f.type || 'text'}" value="${esc(v)}" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} ${extra} ${req}>`;
+        control = `<input id="${id}" name="${f.key}" type="${f.type || 'text'}" value="${esc(v)}" ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} ${extra} ${attrs} ${req}>`;
     }
-    return `<div class="field ${f.full ? 'full' : ''}"><label for="${id}">${f.label}${f.required ? '' : ' <em>(opcional)</em>'}</label>${control}</div>`;
+    const optional = f.required || f.type === 'password' ? '' : ' <em>(opcional)</em>';
+    return `<div class="field ${f.full ? 'full' : ''}"><label for="${id}">${f.label}${optional}</label>${control}</div>`;
 }
 
 function openForm(kind, id = null) {
@@ -433,9 +458,9 @@ function openForm(kind, id = null) {
     const record = id ? cfg.list().find(r => r.id === id) : null;
     editing = { kind, id };
     $('#formTitle').textContent = `${record ? 'Editar' : 'Novo'} ${cfg.title}`;
-    $('#formFields').innerHTML = cfg.fields().map(f => fieldHtml(f, record?.[f.key])).join('');
+    $('#formFields').innerHTML = cfg.fields(record).map(f => fieldHtml(f, f.noPrefill ? '' : record?.[f.key])).join('');
     $('#formError').hidden = true;
-    $('#formDelete').hidden = !record;
+    $('#formDelete').hidden = !record || (kind === 'users' && record.id === state.user.id);
     dlg.showModal();
     $('#formFields input, #formFields select')?.focus();
 }
@@ -452,13 +477,19 @@ $('#entityForm').addEventListener('submit', async e => {
     const body = {};
     for (const el of $$('#formFields [name]')) {
         if (el.required && !el.value.trim()) { err.textContent = `Preencha o campo "${el.labels[0].textContent.replace('(opcional)', '').trim()}".`; err.hidden = false; return el.focus(); }
+        if (el.type === 'password' && !el.value) continue; // em edição, vazio mantém a senha atual
+        if (el.minLength > 0 && el.value && el.value.length < el.minLength) { err.textContent = `A senha deve ter ao menos ${el.minLength} caracteres.`; err.hidden = false; return el.focus(); }
         body[el.name] = el.value;
     }
     const btn = $('#formSave');
     btn.disabled = true;
     try {
         const path = `/${editing.kind}${editing.id ? `/${editing.id}` : ''}`;
-        await api(path, { method: editing.id ? 'PUT' : 'POST', body });
+        const saved = await api(path, { method: editing.id ? 'PUT' : 'POST', body });
+        if (editing.kind === 'users' && editing.id === state.user.id) { // atualiza nome/e-mail exibidos
+            state.user = { ...state.user, name: saved.name, email: saved.email };
+            showApp();
+        }
         closeForm();
         toast('Salvo com sucesso.');
         await loadAll();
@@ -471,7 +502,7 @@ $('#entityForm').addEventListener('submit', async e => {
 });
 
 $('#formDelete').addEventListener('click', async () => {
-    const what = { clients: 'este cliente (os projetos dele ficam sem cliente)', projects: 'este projeto e todos os seus lançamentos financeiros', payments: 'este lançamento' }[editing.kind];
+    const what = { clients: 'este cliente (os projetos dele ficam sem cliente)', projects: 'este projeto e todos os seus lançamentos financeiros', payments: 'este lançamento', users: 'este usuário (ele perde o acesso imediatamente)' }[editing.kind];
     if (!confirm(`Excluir ${what}? Esta ação não pode ser desfeita.`)) return;
     try {
         await api(`/${editing.kind}/${editing.id}`, { method: 'DELETE' });

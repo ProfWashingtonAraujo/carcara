@@ -95,9 +95,13 @@ function parseBody(schema, body, { partial = false } = {}) {
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 // ===== Autenticação =====
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
     try {
-        req.user = jwt.verify(req.cookies[COOKIE], JWT_SECRET);
+        const payload = jwt.verify(req.cookies[COOKIE], JWT_SECRET);
+        // confere no banco: usuário excluído perde o acesso na hora
+        const { rows } = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [payload.sub]);
+        if (!rows[0]) throw new Error('usuário inexistente');
+        req.user = rows[0];
         next();
     } catch {
         res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' });
@@ -120,7 +124,7 @@ app.post('/api/auth/login', loginLimiter, wrap(async (req, res) => {
 
     const token = jwt.sign({ sub: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: `${SESSION_DAYS}d` });
     res.cookie(COOKIE, token, { httpOnly: true, secure: PROD, sameSite: 'lax', maxAge: SESSION_DAYS * 864e5, path: '/' });
-    res.json({ user: { name: user.name, email: user.email } });
+    res.json({ user: { id: user.id, name: user.name, email: user.email } });
 }));
 
 app.post('/api/auth/logout', (req, res) => {
@@ -128,7 +132,7 @@ app.post('/api/auth/logout', (req, res) => {
     res.json({ ok: true });
 });
 
-app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: { name: req.user.name, email: req.user.email } }));
+app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email } }));
 
 // ===== Solicitações do site (público) =====
 const LEAD_SCHEMA = {
@@ -213,6 +217,62 @@ const RESOURCES = {
         noCreate: true
     }
 };
+
+// ===== Usuários do painel =====
+const USER_SCHEMA = {
+    name: { required: true, label: 'Nome', max: 120 },
+    email: { required: true, type: 'email', label: 'E-mail' }
+};
+
+function parsePassword(value, { required }) {
+    if (value === undefined || value === null || value === '') {
+        if (required) throw new HttpError(400, 'Informe a senha.');
+        return null;
+    }
+    if (typeof value !== 'string' || value.length < 10) throw new HttpError(400, 'A senha deve ter ao menos 10 caracteres.');
+    if (Buffer.byteLength(value) > 72) throw new HttpError(400, 'A senha pode ter no máximo 72 caracteres.');
+    return value;
+}
+
+const USER_COLS = 'id, name, email, created_at';
+
+api.get('/users', wrap(async (req, res) => {
+    const { rows } = await pool.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at`);
+    res.json(rows);
+}));
+
+api.post('/users', wrap(async (req, res) => {
+    const data = parseBody(USER_SCHEMA, req.body);
+    const password = parsePassword(req.body?.password, { required: true });
+    const hash = await bcrypt.hash(password, 12);
+    const { rows } = await pool.query(
+        `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING ${USER_COLS}`,
+        [data.name, data.email, hash]
+    );
+    res.status(201).json(rows[0]);
+}));
+
+api.put('/users/:id', wrap(async (req, res) => {
+    const id = idParam(req);
+    const data = parseBody(USER_SCHEMA, req.body, { partial: true });
+    const password = parsePassword(req.body?.password, { required: false });
+    const sets = [], values = [];
+    for (const [k, v] of Object.entries(data)) { values.push(v); sets.push(`${k} = $${values.length}`); }
+    if (password) { values.push(await bcrypt.hash(password, 12)); sets.push(`password_hash = $${values.length}`); }
+    if (!sets.length) throw new HttpError(400, 'Nada para atualizar');
+    values.push(id);
+    const { rows } = await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING ${USER_COLS}`, values);
+    if (!rows[0]) throw new HttpError(404, 'Usuário não encontrado');
+    res.json(rows[0]);
+}));
+
+api.delete('/users/:id', wrap(async (req, res) => {
+    const id = idParam(req);
+    if (id === req.user.id) throw new HttpError(400, 'Você não pode excluir o próprio usuário.');
+    const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);
+    if (!rowCount) throw new HttpError(404, 'Usuário não encontrado');
+    res.json({ ok: true });
+}));
 
 const TABLES = { clients: 'clients', projects: 'projects', payments: 'payments', leads: 'leads' };
 const idParam = req => {
@@ -327,6 +387,7 @@ app.use('/app', express.static(path.join(ROOT, 'app')));
 app.use((err, req, res, next) => {
     if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido' });
+    if (err.code === '23505') return res.status(409).json({ error: 'Já existe um usuário com esse e-mail.' });
     // violações de chave estrangeira (ex.: cliente inexistente)
     if (err.code === '23503') return res.status(400).json({ error: 'Registro relacionado não existe' });
     console.error(err);
