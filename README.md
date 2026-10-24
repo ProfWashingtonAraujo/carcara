@@ -33,6 +33,8 @@ Este repositório contém o código-fonte da landing page institucional da Carca
 
 **Arquitetura:** landing + painel estáticos na **Vercel**, API Node/Express (`server/`) no **Render** e banco Postgres no **Neon**. A Vercel repassa `/api/*` para o Render (`vercel.json`), então o cookie de sessão é do mesmo domínio.
 
+**Automações em Python** (`python/`): relatório mensal, alertas de cobrança, triagem de solicitações com IA, screenshots dos cases e um diagnóstico de sites. Veja [python/README.md](python/README.md).
+
 **Rodar localmente**
 ```bash
 cd server

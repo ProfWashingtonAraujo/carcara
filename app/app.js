@@ -325,6 +325,7 @@ function renderLeads() {
             </div>
             <div class="chips">${[l.service, l.budget, l.deadline].filter(Boolean).map(v => `<span>${esc(v)}</span>`).join('')}</div>
             <p>${esc(l.message)}</p>
+            ${l.ai_at ? leadAnalysis(l) : ''}
             <div class="actions">
                 ${l.status !== 'convertido' ? `<button class="btn sm primary" data-act="convert" data-id="${l.id}"><i class="fas fa-user-plus"></i> Converter em cliente</button>` : ''}
                 ${l.status === 'novo' ? `<button class="btn sm ghost-dark" data-act="lead-contact" data-id="${l.id}">Marcar em contato</button>` : ''}
@@ -333,6 +334,24 @@ function renderLeads() {
                 <button class="btn sm ghost-dark danger-txt" data-act="lead-delete" data-id="${l.id}" aria-label="Excluir solicitação"><i class="fas fa-trash"></i></button>
             </div>
         </article>`).join('')}</div>`;
+}
+
+const AI = {
+    category: { site_institucional: 'Site institucional', sistema_web: 'Sistema web', aplicativo: 'Aplicativo', automacao: 'Automação', integracao: 'Integração', consultoria: 'Consultoria', outro: 'Outro' },
+    complexity: { baixa: 'Complexidade baixa', media: 'Complexidade média', alta: 'Complexidade alta' },
+    priority: { quente: 'Quente', morno: 'Morno', frio: 'Frio' }
+};
+
+// Análise gerada pela triagem com IA (python -m carcara triage); a resposta é só um rascunho
+function leadAnalysis(l) {
+    return `<details class="ai-box" ${l.status === 'novo' ? 'open' : ''}>
+        <summary><i class="fas fa-wand-magic-sparkles"></i> Análise automática
+            ${pill(l.ai_priority === 'quente' ? 'bad' : l.ai_priority === 'morno' ? 'warn' : 'muted', AI.priority[l.ai_priority] || l.ai_priority)}
+            <span class="chips inline"><span>${esc(AI.category[l.ai_category] || l.ai_category)}</span><span>${esc(AI.complexity[l.ai_complexity] || l.ai_complexity)}</span></span></summary>
+        <p>${esc(l.ai_summary)}</p>
+        <strong>Próximos passos</strong><p class="pre">${esc(l.ai_next_steps)}</p>
+        <strong>Rascunho de resposta</strong><p class="pre">${esc(l.ai_reply)}</p>
+    </details>`;
 }
 
 // ===== FINANCEIRO =====

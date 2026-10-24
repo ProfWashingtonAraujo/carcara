@@ -87,6 +87,15 @@ CREATE TABLE IF NOT EXISTS cases (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- análise automática (python -m carcara triage)
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_category TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_complexity TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_priority TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_summary TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_next_steps TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_reply TEXT;
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS projects_client_idx ON projects (client_id);
 CREATE INDEX IF NOT EXISTS payments_project_idx ON payments (project_id);
 `;
