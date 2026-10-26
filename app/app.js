@@ -18,13 +18,15 @@ const LABELS = {
 const options = map => Object.entries(map).map(([value, label]) => ({ value, label }));
 
 // ===== API =====
+const SEM_CONEXAO = 'Não foi possível conectar ao servidor. Verifique sua internet e tente novamente.';
+
 async function api(path, { method = 'GET', body } = {}) {
     const res = await fetch(`/api${path}`, {
         method,
         credentials: 'same-origin',
         headers: body ? { 'Content-Type': 'application/json' } : undefined,
         body: body ? JSON.stringify(body) : undefined
-    });
+    }).catch(() => { throw new Error(SEM_CONEXAO); });
     const data = await res.json().catch(() => ({}));
     if (res.status === 401 && !path.startsWith('/auth/login')) {
         showLogin();
@@ -205,7 +207,7 @@ async function downloadExport(report, format, button) {
     button.disabled = true;
     icon.className = 'fas fa-spinner fa-spin';
     try {
-        const res = await fetch(`/api/export/${report}?format=${format}&month=${encodeURIComponent(state.exportMonth)}`, { credentials: 'same-origin' });
+        const res = await fetch(`/api/export/${report}?format=${format}&month=${encodeURIComponent(state.exportMonth)}`, { credentials: 'same-origin' }).catch(() => { throw new Error(SEM_CONEXAO); });
         if (res.status === 401) { showLogin(); return; }
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Não foi possível gerar o arquivo.');
         const name = (res.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/)?.[1] || `relatorio.${format}`;
