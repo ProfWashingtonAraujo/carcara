@@ -88,7 +88,7 @@ const c=d.score>=80?'var(--ok)':d.score>=55?'var(--warn)':'var(--bad)';
 let h=`<div class="card"><div class="score"><div class="ring" style="background:${c}">${d.score}</div><div><strong>${esc(d.url)}</strong><br><span style="color:var(--mut)">Nota de 0 a 100 · resposta em ${d.stats.segundos}s · ${d.stats.kb} KB</span></div></div>`;
 for(const [k,t] of Object.entries(AREAS)){const items=d.findings.filter(x=>x.area===k);if(!items.length)continue;
 h+=`<h2>${t}</h2><ul>`+items.map(x=>`<li><span class="dot" style="background:${COLOR[x.level]}"></span><div>${esc(x.title)}${x.advice?`<small>${esc(x.advice)}</small>`:''}</div></li>`).join('')+'</ul>';}
-r.innerHTML=h+'<a class="cta" href="https://carcara-tech.vercel.app/#contato">Quer corrigir isso? Fale com a Carcará →</a></div>';
+r.innerHTML=h+'<a class="cta" href="https://www.carcaratech.com.br/#contato">Quer corrigir isso? Fale com a Carcará →</a></div>';
 }catch(x){e.textContent=x.message;e.hidden=false}finally{b.disabled=false;b.textContent='Analisar'}});
 </script></body></html>"""
 

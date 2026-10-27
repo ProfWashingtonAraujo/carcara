@@ -66,7 +66,7 @@ class Fetched:
 def fetch(raw_url: str, client: httpx.Client | None = None) -> Fetched:
     url = normalize_url(raw_url)
     own = client is None
-    client = client or httpx.Client(follow_redirects=False, timeout=TIMEOUT, headers={"User-Agent": "CarcaraDiagnostico/1.0 (+https://carcara-tech.vercel.app)"})
+    client = client or httpx.Client(follow_redirects=False, timeout=TIMEOUT, headers={"User-Agent": "CarcaraDiagnostico/1.0 (+https://www.carcaratech.com.br)"})
     try:
         for hop in range(MAX_REDIRECTS + 1):
             assert_public(urlparse(url).hostname)
