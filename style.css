@@ -815,6 +815,10 @@ footer {
     margin-bottom: 1rem;
 }
 
+.footer-brand .logo-img {
+    max-height: 110px;
+}
+
 .footer-links h5 {
     color: var(--white);
     font-size: 1.1rem;
