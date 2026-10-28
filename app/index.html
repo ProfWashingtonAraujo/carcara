@@ -80,10 +80,12 @@
 
         <aside class="side-panel glass" aria-label="Agenda">
             <div class="profile">
-                <span class="avatar" id="avatar">C</span>
+                <button type="button" class="avatar" id="avatar" title="Alterar foto de perfil" aria-label="Alterar foto de perfil">C</button>
+                <input type="file" id="avatarFile" accept="image/jpeg,image/png,image/webp" hidden>
                 <div>
                     <strong id="userName">—</strong>
                     <span id="userEmail"></span>
+                    <button type="button" class="link-btn" id="avatarRemove" hidden>Remover foto</button>
                 </div>
             </div>
 

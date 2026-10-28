@@ -39,7 +39,8 @@ app.use(helmet({
         }
     }
 }));
-app.use(express.json({ limit: '50kb' }));
+// a foto de perfil (data URL já reduzida no navegador) tem limite próprio, na rota /api/me/avatar
+app.use((req, res, next) => req.path === '/api/me/avatar' ? next() : express.json({ limit: '50kb' })(req, res, next));
 app.use(cookieParser());
 
 // ===== Helpers =====
@@ -106,7 +107,7 @@ async function requireAuth(req, res, next) {
     try {
         const payload = jwt.verify(req.cookies[COOKIE], JWT_SECRET);
         // confere no banco: usuário excluído perde o acesso na hora
-        const { rows } = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [payload.sub]);
+        const { rows } = await pool.query('SELECT id, name, email, avatar FROM users WHERE id = $1', [payload.sub]);
         if (!rows[0]) throw new Error('usuário inexistente');
         req.user = rows[0];
         next();
@@ -124,14 +125,14 @@ const DUMMY_HASH = bcrypt.hashSync('invalido', 12);
 app.post('/api/auth/login', loginLimiter, wrap(async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
-    const { rows } = await pool.query('SELECT id, name, email, password_hash FROM users WHERE email = $1', [email]);
+    const { rows } = await pool.query('SELECT id, name, email, avatar, password_hash FROM users WHERE email = $1', [email]);
     const user = rows[0];
     const ok = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
     if (!user || !ok) throw new HttpError(401, 'E-mail ou senha incorretos.');
 
     const token = jwt.sign({ sub: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: `${SESSION_DAYS}d` });
     res.cookie(COOKIE, token, { httpOnly: true, secure: PROD, sameSite: 'lax', maxAge: SESSION_DAYS * 864e5, path: '/' });
-    res.json({ user: { id: user.id, name: user.name, email: user.email } });
+    res.json({ user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar } });
 }));
 
 app.post('/api/auth/logout', (req, res) => {
@@ -139,7 +140,18 @@ app.post('/api/auth/logout', (req, res) => {
     res.json({ ok: true });
 });
 
-app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email } }));
+app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, avatar: req.user.avatar } }));
+
+// Foto de perfil do próprio usuário: data URL de imagem pequena ou vazio para remover
+const AVATAR_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+app.put('/api/me/avatar', requireAuth, express.json({ limit: '200kb' }), wrap(async (req, res) => {
+    const avatar = req.body?.avatar || null;
+    if (avatar && (typeof avatar !== 'string' || avatar.length > 150000 || !AVATAR_RE.test(avatar))) {
+        throw new HttpError(400, 'Imagem inválida. Use JPG, PNG ou WebP.');
+    }
+    await pool.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatar, req.user.id]);
+    res.json({ avatar });
+}));
 
 // ===== Solicitações do site (público) =====
 const LEAD_SCHEMA = {
@@ -241,7 +253,7 @@ function parsePassword(value, { required }) {
     return value;
 }
 
-const USER_COLS = 'id, name, email, created_at';
+const USER_COLS = 'id, name, email, avatar, created_at';
 
 api.get('/users', wrap(async (req, res) => {
     const { rows } = await pool.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at`);

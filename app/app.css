@@ -148,6 +148,9 @@ button.card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(0,
 
 .mini-av { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--orange-soft); color: var(--orange); font-weight: 700; font-size: .9rem; }
 .mini-av.lg { width: 44px; height: 44px; }
+.mini-av[style] { background-size: cover; background-position: center; }
+.link-btn { border: 0; padding: 0; margin-top: 2px; background: none; font: inherit; font-size: .72rem; color: var(--text-dim); text-decoration: underline; cursor: pointer; }
+.link-btn:hover { color: var(--text); }
 .list { list-style: none; display: grid; gap: 4px; }
 .row-btn { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 8px; border-radius: 14px; transition: background .15s; }
 .row-btn:hover { background: #f3f4f7; }
@@ -261,7 +264,8 @@ td.num { font-weight: 600; }
 /* ===== Painel lateral ===== */
 .side-panel { padding: 24px 22px; overflow-y: auto; scrollbar-width: none; }
 .profile { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.avatar { width: 46px; height: 46px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--orange); font-weight: 700; font-size: 1.1rem; }
+.avatar { width: 46px; height: 46px; flex: none; border: 0; padding: 0; border-radius: 50%; display: grid; place-items: center; background: var(--orange) center / cover no-repeat; color: inherit; font: inherit; font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: opacity .2s; }
+.avatar:hover { opacity: .85; }
 .profile > div { min-width: 0; }
 .profile strong { display: block; font-size: .95rem; }
 .profile span:not(.avatar) { display: block; font-size: .76rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; }

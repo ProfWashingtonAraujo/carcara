@@ -36,6 +36,40 @@ async function api(path, { method = 'GET', body } = {}) {
     return data;
 }
 
+// ===== FOTO DE PERFIL =====
+function setAvatar(el, user) {
+    el.style.backgroundImage = user.avatar ? `url("${user.avatar}")` : '';
+    el.textContent = user.avatar ? '' : user.name.trim().charAt(0).toUpperCase();
+}
+
+// recorta o centro em quadrado e reduz para 256 px, para a imagem ficar leve no banco
+function resizeImage(file, size = 256) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            const side = Math.min(img.width, img.height);
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            canvas.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível ler a imagem.')); };
+        img.src = url;
+    });
+}
+
+async function saveAvatar(avatar) {
+    const data = await api('/me/avatar', { method: 'PUT', body: { avatar } });
+    state.user.avatar = data.avatar;
+    const me = state.users.find(u => u.id === state.user.id);
+    if (me) me.avatar = data.avatar;
+    setAvatar($('#avatar'), state.user);
+    $('#avatarRemove').hidden = !state.user.avatar;
+    if (state.view === 'usuarios') renderView();
+}
+
 // ===== ESTADO =====
 const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], summary: null, view: 'dashboard', query: '', exportMonth: isoToday().slice(0, 7) };
 
@@ -92,10 +126,32 @@ function showApp() {
     $('#switcher').hidden = false;
     $('#userName').textContent = state.user.name;
     $('#userEmail').textContent = state.user.email;
-    $('#avatar').textContent = state.user.name.trim().charAt(0).toUpperCase();
+    setAvatar($('#avatar'), state.user);
+    $('#avatarRemove').hidden = !state.user.avatar;
     const h = new Date().getHours();
     $('#greeting').textContent = `${h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'}, ${state.user.name.split(' ')[0]}`;
 }
+
+$('#avatar').addEventListener('click', () => $('#avatarFile').click());
+$('#avatarFile').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+        await saveAvatar(await resizeImage(file));
+        toast('Foto de perfil atualizada.');
+    } catch (err) {
+        toast(err.message, true);
+    }
+});
+$('#avatarRemove').addEventListener('click', async () => {
+    try {
+        await saveAvatar(null);
+        toast('Foto removida.');
+    } catch (err) {
+        toast(err.message, true);
+    }
+});
 
 $('#togglePass').addEventListener('click', () => {
     const input = $('#loginPassword');
@@ -433,7 +489,7 @@ function renderUsers() {
     if (!list.length) return empty('Nenhum usuário encontrado.');
     return `<div class="grid-3">${list.map(u => `
         <button class="card client" data-edit="users:${u.id}">
-            <div class="client-top"><span class="mini-av lg">${esc(u.name.charAt(0).toUpperCase())}</span>
+            <div class="client-top"><span class="mini-av lg"${u.avatar ? ` style="background-image:url('${u.avatar}')"` : ''}>${u.avatar ? '' : esc(u.name.charAt(0).toUpperCase())}</span>
                 <div><strong>${esc(u.name)}</strong><span>${esc(u.email)}</span></div>
                 ${u.id === state.user.id ? pill('info', 'Você') : ''}</div>
             <small>Criado em ${new Date(u.created_at).toLocaleDateString('pt-BR')}</small>

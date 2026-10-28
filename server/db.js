@@ -86,6 +86,7 @@ CREATE INDEX IF NOT EXISTS payments_project_idx ON payments (project_id);
 // Cria as tabelas e, se ainda não houver usuários, o administrador definido no ambiente
 async function init() {
     await pool.query(SCHEMA);
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT');
 
     const { rows } = await pool.query('SELECT count(*)::int AS n FROM users');
     if (rows[0].n > 0) return;
