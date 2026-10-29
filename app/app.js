@@ -237,6 +237,12 @@ document.addEventListener('click', e => {
         eye.firstElementChild.className = `fas ${show ? 'fa-eye-slash' : 'fa-eye'}`;
         return;
     }
+    const copy = e.target.closest('[data-copy]');
+    if (copy) {
+        const input = $(copy.dataset.copy);
+        input.select();
+        return navigator.clipboard.writeText(input.value).then(() => toast('Link copiado.'), () => toast('Selecione o link e copie com Ctrl+C.', true));
+    }
     const exp = e.target.closest('[data-export]');
     if (exp) { const [report, format] = exp.dataset.export.split(':'); return downloadExport(report, format, exp); }
     const nav = e.target.closest('[data-nav]');
@@ -440,7 +446,8 @@ function renderTestimonials() {
                 ? `<p>Convite enviado; expira em ${new Date(t.invite_expires_at).toLocaleDateString('pt-BR')}.</p>`
                 : `<p>“${esc(t.body)}”</p>
                    <div class="chips"><span>${t.source === 'manual' ? 'Registrado por você' : 'Enviado pelo cliente'}</span><span>Autorização: ${t.consent_note ? esc(t.consent_note) : `aceita em ${new Date(t.consent_at).toLocaleDateString('pt-BR')}`}</span></div>`}
-            ${isAdmin() ? `<div class="actions">
+            ${t.status === 'convite' ? `<div class="actions"><button class="btn sm primary" data-act="t-renew" data-id="${t.id}"><i class="fas fa-link"></i> Gerar novo link</button>${isAdmin() ? `<button class="btn sm ghost-dark danger-txt" data-act="t-delete" data-id="${t.id}" aria-label="Excluir"><i class="fas fa-trash"></i></button>` : ''}</div>` : ''}
+            ${isAdmin() && t.status !== 'convite' ? `<div class="actions">
                 ${t.status !== 'convite' && t.status !== 'aprovado' ? `<button class="btn sm primary" data-act="t-approve" data-id="${t.id}"><i class="fas fa-check"></i> Aprovar e publicar</button>` : ''}
                 ${t.status === 'aprovado' ? `<button class="btn sm ghost-dark" data-act="t-pending" data-id="${t.id}">Tirar do ar</button>` : ''}
                 ${t.status === 'pendente' ? `<button class="btn sm ghost-dark" data-act="t-reject" data-id="${t.id}">Rejeitar</button>` : ''}
@@ -543,6 +550,11 @@ async function runAction(act, id) {
         else if (act === 'lead-contact') await api(`/leads/${id}`, { method: 'PUT', body: { status: 'contato' } });
         else if (act === 'lead-discard') await api(`/leads/${id}`, { method: 'PUT', body: { status: 'descartado' } });
         else if (act === 'invite') return openForm('invites');
+        else if (act === 't-renew') {
+            if (!confirm('Gerar um novo link? O link anterior deixa de funcionar.')) return;
+            const { token } = await api(`/invites/${id}/renew`, { method: 'POST' });
+            showInviteLink(token);
+        }
         else if (act === 't-approve') { await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'aprovado' } }); toast('Publicado no site.'); }
         else if (act === 't-pending') await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'pendente' } });
         else if (act === 't-reject') await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'rejeitado' } });
@@ -663,6 +675,8 @@ function openForm(kind, id = null) {
     const record = id ? cfg.list().find(r => r.id === id) : null;
     if (kind === 'users' && !isAdmin() && record?.id !== state.user.id) return toast('Apenas administradores podem alterar outros usuários.', true);
     editing = { kind, id };
+    $('#formSave').hidden = false;
+    $('#formCancel').textContent = 'Cancelar';
     $('#formTitle').textContent = `${record ? 'Editar' : 'Novo'} ${cfg.title}`;
     $('#formFields').innerHTML = cfg.fields(record).map(f => fieldHtml(f, f.noPrefill ? '' : record?.[f.key])).join('');
     $('#formError').hidden = true;
@@ -706,7 +720,7 @@ $('#entityForm').addEventListener('submit', async e => {
     try {
         const path = `/${editing.kind}${editing.id ? `/${editing.id}` : ''}`;
         const saved = await api(path, { method: editing.id ? 'PUT' : 'POST', body });
-        if (editing.kind === 'invites') await shareInvite(saved);
+        if (editing.kind === 'invites') { showInviteLink(saved.token); await loadAll(); return; }
         if (editing.kind === 'users' && editing.id === state.user.id) { // atualiza nome/e-mail exibidos
             state.user = { ...state.user, name: saved.name, email: saved.email, role: saved.role };
             showApp();
@@ -722,13 +736,26 @@ $('#entityForm').addEventListener('submit', async e => {
     }
 });
 
-// o link só existe neste momento (o servidor guarda apenas o hash): copia e mostra para o envio
-async function shareInvite({ token }) {
+// o link só existe neste momento (o servidor guarda apenas o hash): fica na tela até você fechar
+function showInviteLink(token) {
     const link = `${location.origin}/depoimento.html#${token}`;
-    let copied = false;
-    try { await navigator.clipboard.writeText(link); copied = true; } catch { /* sem permissão da área de transferência */ }
-    closeForm();
-    window.prompt(copied ? 'Link copiado! Envie ao cliente (vale 30 dias, uso único):' : 'Copie o link e envie ao cliente (vale 30 dias, uso único):', link);
+    const text = `Olá! Conte como foi trabalhar com a Carcará Tecnologia: ${link}`;
+    editing = { kind: 'invites', id: null };
+    $('#formTitle').textContent = 'Link do convite';
+    $('#formFields').innerHTML = `<div class="field full">
+        <label for="inviteLink">Envie este link ao cliente (vale 30 dias e serve para um único envio)</label>
+        <input id="inviteLink" readonly value="${esc(link)}">
+        <div class="actions" style="margin-top:12px">
+            <button type="button" class="btn sm primary" data-copy="#inviteLink"><i class="fas fa-copy"></i> Copiar link</button>
+            <a class="btn sm ghost-dark" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(text)}"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</a>
+        </div>
+        <p class="hint">Guarde este link agora: depois de fechar esta janela ele não pode ser mostrado de novo. Se perder, use “Gerar novo link”.</p></div>`;
+    $('#formError').hidden = true;
+    $('#formDelete').hidden = true;
+    $('#formSave').hidden = true;
+    $('#formCancel').textContent = 'Fechar';
+    if (!dlg.open) dlg.showModal();
+    $('#inviteLink').select();
 }
 
 $('#formDelete').addEventListener('click', async () => {

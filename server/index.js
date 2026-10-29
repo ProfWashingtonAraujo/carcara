@@ -534,6 +534,16 @@ api.post('/invites', wrap(async (req, res) => {
     res.status(201).json({ id: row.id, token, expires_at: row.invite_expires_at });
 }));
 
+// novo link para um convite que ainda está aguardando (o anterior deixa de valer)
+api.post('/invites/:id/renew', wrap(async (req, res) => {
+    const token = crypto.randomBytes(32).toString('base64url');
+    const { rows: [row] } = await pool.query(
+        `UPDATE testimonials SET invite_hash = $1, invite_expires_at = now() + make_interval(days => $2)
+         WHERE id = $3 AND status = 'convite' RETURNING id, invite_expires_at`, [hashToken(token), INVITE_DAYS, idParam(req)]);
+    if (!row) throw new HttpError(404, 'Convite não encontrado');
+    res.json({ id: row.id, token, expires_at: row.invite_expires_at });
+}));
+
 // depoimento recebido por fora (WhatsApp, e-mail): exige registrar de onde veio a autorização
 api.post('/testimonials', requireAdmin, express.json({ limit: '120kb' }), wrap(async (req, res) => {
     const photo = parsePhoto(req.body?.photo);
