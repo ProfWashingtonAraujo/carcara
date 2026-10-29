@@ -105,6 +105,9 @@ async function init() {
     await pool.query(SCHEMA);
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT');
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0');
+    // quem já existia tinha acesso total: vira admin; novos usuários entram como membro
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'membro'))`);
+    await pool.query(`ALTER TABLE users ALTER COLUMN role SET DEFAULT 'membro'`);
 
     await secureTables();
 
@@ -117,7 +120,7 @@ async function init() {
         return;
     }
     const hash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-    await pool.query('INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)', [ADMIN_NAME || 'Administrador', ADMIN_EMAIL.toLowerCase(), hash]);
+    await pool.query(`INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'admin')`, [ADMIN_NAME || 'Administrador', ADMIN_EMAIL.toLowerCase(), hash]);
     console.log(`Usuário administrador criado: ${ADMIN_EMAIL}`);
 }
 

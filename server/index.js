@@ -110,7 +110,7 @@ async function requireAuth(req, res, next) {
     try {
         const payload = jwt.verify(req.cookies[COOKIE], JWT_SECRET);
         // confere no banco: usuário excluído perde o acesso na hora
-        const { rows } = await pool.query('SELECT id, name, email, avatar, token_version FROM users WHERE id = $1', [payload.sub]);
+        const { rows } = await pool.query('SELECT id, name, email, avatar, role, token_version FROM users WHERE id = $1', [payload.sub]);
         // logout e troca de senha incrementam token_version e invalidam os tokens já emitidos
         if (!rows[0] || payload.tv !== rows[0].token_version) throw new Error('sessão inválida');
         req.user = rows[0];
@@ -140,13 +140,13 @@ const DUMMY_HASH = bcrypt.hashSync('invalido', 12);
 app.post('/api/auth/login', loginLimiter, loginAccountLimiter, wrap(async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
-    const { rows } = await pool.query('SELECT id, name, email, avatar, password_hash, token_version FROM users WHERE email = $1', [email]);
+    const { rows } = await pool.query('SELECT id, name, email, avatar, role, password_hash, token_version FROM users WHERE email = $1', [email]);
     const user = rows[0];
     const ok = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
     if (!user || !ok) throw new HttpError(401, 'E-mail ou senha incorretos.');
 
     startSession(res, user);
-    res.json({ user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar } });
+    res.json({ user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar, role: user.role } });
 }));
 
 app.post('/api/auth/logout', wrap(async (req, res) => {
@@ -159,7 +159,7 @@ app.post('/api/auth/logout', wrap(async (req, res) => {
     res.json({ ok: true });
 }));
 
-app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, avatar: req.user.avatar } }));
+app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, avatar: req.user.avatar, role: req.user.role } }));
 
 // Foto de perfil do próprio usuário: data URL de imagem pequena ou vazio para remover
 const AVATAR_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
@@ -262,10 +262,21 @@ const RESOURCES = {
 };
 
 // ===== Usuários do painel =====
+const ROLES = ['admin', 'membro'];
 const USER_SCHEMA = {
     name: { required: true, label: 'Nome', max: 120 },
-    email: { required: true, type: 'email', label: 'E-mail' }
+    email: { required: true, type: 'email', label: 'E-mail' },
+    role: { enum: ROLES, label: 'Perfil' }
 };
+
+const requireAdmin = (req, res, next) =>
+    req.user.role === 'admin' ? next() : res.status(403).json({ error: 'Apenas administradores podem fazer isso.' });
+
+// trocar a própria senha exige a senha atual; o limite impede adivinhá-la com uma sessão roubada
+const passwordLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: false, legacyHeaders: false,
+    keyGenerator: req => `pw:${req.user.id}`, message: { error: 'Muitas tentativas. Aguarde alguns minutos.' }
+});
 
 function parsePassword(value, { required }) {
     if (value === undefined || value === null || value === '') {
@@ -277,28 +288,40 @@ function parsePassword(value, { required }) {
     return value;
 }
 
-const USER_COLS = 'id, name, email, avatar, created_at';
+const USER_COLS = 'id, name, email, avatar, role, created_at';
 
 api.get('/users', wrap(async (req, res) => {
     const { rows } = await pool.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at LIMIT 500`);
     res.json(rows);
 }));
 
-api.post('/users', wrap(async (req, res) => {
+api.post('/users', requireAdmin, wrap(async (req, res) => {
     const data = parseBody(USER_SCHEMA, req.body);
     const password = parsePassword(req.body?.password, { required: true });
     const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
-        `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING ${USER_COLS}`,
-        [data.name, data.email, hash]
+        `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING ${USER_COLS}`,
+        [data.name, data.email, hash, data.role ?? 'membro']
     );
     res.status(201).json(rows[0]);
 }));
 
-api.put('/users/:id', wrap(async (req, res) => {
+api.put('/users/:id', (req, res, next) => (idParam(req) === req.user.id ? passwordLimiter : (q, s, n) => n())(req, res, next), wrap(async (req, res) => {
     const id = idParam(req);
+    const self = id === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!self && !isAdmin) throw new HttpError(403, 'Apenas administradores podem alterar outros usuários.');
     const data = parseBody(USER_SCHEMA, req.body, { partial: true });
+    if (data.role && !isAdmin) throw new HttpError(403, 'Apenas administradores podem alterar perfis.');
     const password = parsePassword(req.body?.password, { required: false });
+    if (password && self) {
+        const { rows: [me] } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [id]);
+        if (!(await bcrypt.compare(String(req.body?.current_password || ''), me.password_hash))) throw new HttpError(400, 'Senha atual incorreta.');
+    }
+    if (data.role === 'membro') {
+        const { rows: [{ n }] } = await pool.query(`SELECT count(*)::int AS n FROM users WHERE role = 'admin' AND id <> $1`, [id]);
+        if (!n) throw new HttpError(400, 'Mantenha ao menos um administrador.');
+    }
     const sets = [], values = [];
     for (const [k, v] of Object.entries(data)) { values.push(v); sets.push(`${k} = $${values.length}`); }
     if (password) { values.push(await bcrypt.hash(password, 12)); sets.push(`password_hash = $${values.length}`, 'token_version = token_version + 1'); }
@@ -311,7 +334,7 @@ api.put('/users/:id', wrap(async (req, res) => {
     res.json(user);
 }));
 
-api.delete('/users/:id', wrap(async (req, res) => {
+api.delete('/users/:id', requireAdmin, wrap(async (req, res) => {
     const id = idParam(req);
     if (id === req.user.id) throw new HttpError(400, 'Você não pode excluir o próprio usuário.');
     const { rowCount } = await pool.query('DELETE FROM users WHERE id = $1', [id]);

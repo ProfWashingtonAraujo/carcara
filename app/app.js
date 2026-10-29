@@ -71,6 +71,7 @@ async function saveAvatar(avatar) {
 }
 
 // ===== ESTADO =====
+const isAdmin = () => state.user?.role === 'admin';
 const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], summary: null, view: 'dashboard', query: '', exportMonth: isoToday().slice(0, 7) };
 
 const VIEWS = {
@@ -204,7 +205,7 @@ function go(view, { push = true } = {}) {
     });
     $('#subtitle').textContent = VIEWS[view].subtitle;
     const newBtn = $('#newBtn');
-    newBtn.hidden = !VIEWS[view].onNew;
+    newBtn.hidden = !VIEWS[view].onNew || (view === 'usuarios' && !isAdmin());
     $('#newLabel').textContent = VIEWS[view].newLabel || 'Novo';
     $('#search').closest('.search').hidden = view === 'dashboard';
     $('#main').scrollTo({ top: 0 });
@@ -492,9 +493,9 @@ function renderUsers() {
             <div class="client-top"><span class="mini-av lg"${u.avatar ? ` style="background-image:url('${u.avatar}')"` : ''}>${u.avatar ? '' : esc(u.name.charAt(0).toUpperCase())}</span>
                 <div><strong>${esc(u.name)}</strong><span>${esc(u.email)}</span></div>
                 ${u.id === state.user.id ? pill('info', 'Você') : ''}</div>
-            <small>Criado em ${new Date(u.created_at).toLocaleDateString('pt-BR')}</small>
+            <small>${u.role === 'admin' ? 'Administrador' : 'Membro'} · Criado em ${new Date(u.created_at).toLocaleDateString('pt-BR')}</small>
         </button>`).join('')}</div>
-        <p class="hint">Todos os usuários têm acesso total ao painel. Senhas ficam criptografadas e não podem ser consultadas.</p>`;
+        <p class="hint">Administradores gerenciam usuários; membros usam o painel e editam só o próprio perfil. Senhas ficam criptografadas e não podem ser consultadas.</p>`;
 }
 
 // ===== AÇÕES RÁPIDAS =====
@@ -550,6 +551,8 @@ const FORMS = {
         fields: record => [
             { key: 'name', label: 'Nome', required: true, full: true },
             { key: 'email', label: 'E-mail', type: 'email', required: true, full: true },
+            ...(isAdmin() ? [{ key: 'role', label: 'Perfil', type: 'select', required: true, full: true, def: 'membro', options: [{ value: 'membro', label: 'Membro' }, { value: 'admin', label: 'Administrador' }] }] : []),
+            ...(record && record.id === state.user.id ? [{ key: 'current_password', label: 'Senha atual (obrigatória só para trocar a senha)', type: 'password', full: true, noPrefill: true, maxlength: 72 }] : []),
             { key: 'password', label: record ? 'Nova senha (deixe em branco para manter)' : 'Senha (mín. 10 caracteres)', type: 'password', required: !record, full: true, noPrefill: true, minlength: 10, maxlength: 72 },
             { key: 'password_confirm', label: record ? 'Confirmar nova senha' : 'Confirmar senha', type: 'password', required: !record, full: true, noPrefill: true, maxlength: 72 }
         ]
@@ -594,11 +597,12 @@ function openForm(kind, id = null) {
     const cfg = FORMS[kind];
     if (kind === 'payments' && !state.projects.length) return toast('Cadastre um projeto antes de lançar valores.', true);
     const record = id ? cfg.list().find(r => r.id === id) : null;
+    if (kind === 'users' && !isAdmin() && record?.id !== state.user.id) return toast('Apenas administradores podem alterar outros usuários.', true);
     editing = { kind, id };
     $('#formTitle').textContent = `${record ? 'Editar' : 'Novo'} ${cfg.title}`;
     $('#formFields').innerHTML = cfg.fields(record).map(f => fieldHtml(f, f.noPrefill ? '' : record?.[f.key])).join('');
     $('#formError').hidden = true;
-    $('#formDelete').hidden = !record || (kind === 'users' && record.id === state.user.id);
+    $('#formDelete').hidden = !record || (kind === 'users' && (record.id === state.user.id || !isAdmin()));
     dlg.showModal();
     $('#formFields input, #formFields select')?.focus();
 }
@@ -632,7 +636,7 @@ $('#entityForm').addEventListener('submit', async e => {
         const path = `/${editing.kind}${editing.id ? `/${editing.id}` : ''}`;
         const saved = await api(path, { method: editing.id ? 'PUT' : 'POST', body });
         if (editing.kind === 'users' && editing.id === state.user.id) { // atualiza nome/e-mail exibidos
-            state.user = { ...state.user, name: saved.name, email: saved.email };
+            state.user = { ...state.user, name: saved.name, email: saved.email, role: saved.role };
             showApp();
         }
         closeForm();
