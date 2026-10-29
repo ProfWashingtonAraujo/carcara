@@ -334,8 +334,9 @@ dialog::backdrop { background: rgba(4, 8, 16, .7); backdrop-filter: blur(6px); }
         position: fixed; left: 14px; right: 14px; bottom: 14px; z-index: 20; flex-direction: row; justify-content: space-around; padding: 8px 12px; border-radius: 24px;
     }
     .side-logo { display: none; }
-    .side-nav { flex-direction: row; justify-content: space-around; flex: 1; }
-    .side-cta { width: 40px; height: 40px; }
+    .side-nav { flex-direction: row; justify-content: space-around; flex: 1; min-width: 0; gap: 6px; }
+    .side-btn { width: 40px; height: 40px; flex-shrink: 0; }
+    .side-cta { width: 40px; height: 40px; flex: 0 0 40px; margin-left: 6px; }
     [data-tip]::after { display: none; }
     .switcher { display: none; }
     .main { overflow: visible; padding: 20px 16px; }
