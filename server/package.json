@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js",
+    "encrypt-data": "node encrypt-existing.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

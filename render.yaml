@@ -14,6 +14,8 @@ services:
         sync: false   # connection string do Neon
       - key: JWT_SECRET
         generateValue: true
+      - key: DATA_KEY
+        sync: false   # 64 caracteres hex; o mesmo valor do secret DATA_KEY no GitHub Actions
       - key: ADMIN_NAME
         value: Administrador
       - key: ADMIN_EMAIL

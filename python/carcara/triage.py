@@ -11,6 +11,7 @@ import anthropic
 import httpx
 
 from .config import env
+from .crypto import decrypt, encrypt
 
 CATEGORIES = ["site_institucional", "sistema_web", "aplicativo", "automacao", "integracao", "consultoria", "outro"]
 
@@ -145,6 +146,7 @@ def run(conn, limit: int = 20, dry_run: bool = False, client=None) -> int:
     ).fetchall()
     done = 0
     for lead in leads:
+        lead["message"] = decrypt(lead["message"], "leads.message")  # o painel guarda a mensagem criptografada
         try:
             r = analyze(lead, client)
         except RateLimited as exc:
@@ -158,7 +160,8 @@ def run(conn, limit: int = 20, dry_run: bool = False, client=None) -> int:
             conn.execute(
                 """UPDATE leads SET ai_category = %s, ai_complexity = %s, ai_priority = %s, ai_summary = %s,
                           ai_next_steps = %s, ai_reply = %s, ai_at = now() WHERE id = %s""",
-                (r["category"], r["complexity"], r["priority"], r["summary"], r["next_steps"], r["reply"], lead["id"]),
+                (r["category"], r["complexity"], r["priority"], encrypt(r["summary"], "leads.ai_summary"),
+                 encrypt(r["next_steps"], "leads.ai_next_steps"), encrypt(r["reply"], "leads.ai_reply"), lead["id"]),
             )
             conn.commit()
         done += 1

@@ -21,6 +21,7 @@ defaults:
 
 env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  DATA_KEY: ${{ secrets.DATA_KEY }}
   AI_PROVIDER: ${{ vars.AI_PROVIDER }}
   AI_API_KEY: ${{ secrets.AI_API_KEY }}
   AI_MODEL: ${{ vars.AI_MODEL }}

@@ -10,6 +10,7 @@ try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* sem .env: 
 
 const { pool, init } = require('./db');
 const { REPORTS, TYPES, MONTH_RE } = require('./export');
+const { encryptRow, decryptRow, loadKey } = require('./crypto');
 
 const PROD = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -17,6 +18,8 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
     console.error('JWT_SECRET precisa ter ao menos 32 caracteres.');
     process.exit(1);
 }
+
+try { loadKey(); } catch (err) { console.error(err.message); process.exit(1); }
 
 const COOKIE = 'carcara_session';
 const SESSION_DAYS = 7;
@@ -188,9 +191,10 @@ app.post('/api/leads', leadLimiter, wrap(async (req, res) => {
     // teto global: mesmo com IPs trocados, uma enxurrada não enche o banco nem a fila de triagem
     const { rows: [{ n }] } = await pool.query(`SELECT count(*)::int AS n FROM leads WHERE created_at > now() - interval '1 day'`);
     if (n >= LEADS_PER_DAY) throw new HttpError(429, 'Muitas solicitações hoje. Tente novamente mais tarde.');
+    const e = encryptRow('leads', d);
     await pool.query(
         'INSERT INTO leads (name, email, phone, service, budget, deadline, message) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-        [d.name, d.email, d.phone ?? null, d.service ?? null, d.budget ?? null, d.deadline ?? null, d.message]
+        [e.name, e.email, e.phone ?? null, e.service ?? null, e.budget ?? null, e.deadline ?? null, e.message]
     );
     res.status(201).json({ ok: true });
 }));
@@ -321,25 +325,25 @@ for (const [name, r] of Object.entries(RESOURCES)) {
 
     api.get(`/${name}`, wrap(async (req, res) => {
         const { rows } = await pool.query(`${r.select} ${r.order} LIMIT 2000`);
-        res.json(rows);
+        res.json(rows.map(row => decryptRow(table, row)));
     }));
 
     if (!r.noCreate) {
         api.post(`/${name}`, wrap(async (req, res) => {
-            const data = parseBody(r.schema, req.body);
+            const data = encryptRow(table, parseBody(r.schema, req.body));
             const cols = Object.keys(data).filter(k => data[k] !== null);
             const { rows } = await pool.query(
                 `INSERT INTO ${table} (${cols.join(',')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(',')}) RETURNING id`,
                 cols.map(k => data[k])
             );
             const created = await pool.query(`${r.select} ${r.one}`, [rows[0].id]);
-            res.status(201).json(created.rows[0]);
+            res.status(201).json(decryptRow(table, created.rows[0]));
         }));
     }
 
     api.put(`/${name}/:id`, wrap(async (req, res) => {
         const id = idParam(req);
-        const data = parseBody(r.schema, req.body, { partial: true });
+        const data = encryptRow(table, parseBody(r.schema, req.body, { partial: true }));
         const keys = Object.keys(data);
         if (!keys.length) throw new HttpError(400, 'Nada para atualizar');
         const { rowCount } = await pool.query(
@@ -348,7 +352,7 @@ for (const [name, r] of Object.entries(RESOURCES)) {
         );
         if (!rowCount) throw new HttpError(404, 'Registro não encontrado');
         const updated = await pool.query(`${r.select} ${r.one}`, [id]);
-        res.json(updated.rows[0]);
+        res.json(decryptRow(table, updated.rows[0]));
     }));
 
     api.delete(`/${name}/:id`, wrap(async (req, res) => {
@@ -365,12 +369,16 @@ api.post('/leads/:id/convert', wrap(async (req, res) => {
     try {
         await client.query('BEGIN');
         const { rows } = await client.query('SELECT * FROM leads WHERE id = $1 FOR UPDATE', [id]);
-        const lead = rows[0];
+        const lead = decryptRow('leads', rows[0]);
         if (!lead) throw new HttpError(404, 'Solicitação não encontrada');
         if (lead.status === 'convertido') throw new HttpError(409, 'Solicitação já convertida');
+        const c = encryptRow('clients', {
+            email: lead.email, phone: lead.phone,
+            notes: [lead.service && `Serviço: ${lead.service}`, lead.budget && `Investimento: ${lead.budget}`, lead.deadline && `Prazo: ${lead.deadline}`, lead.message].filter(Boolean).join('\n')
+        });
         const created = await client.query(
             `INSERT INTO clients (name, email, phone, status, notes) VALUES ($1,$2,$3,'prospect',$4) RETURNING id`,
-            [lead.name, lead.email, lead.phone, [lead.service && `Serviço: ${lead.service}`, lead.budget && `Investimento: ${lead.budget}`, lead.deadline && `Prazo: ${lead.deadline}`, lead.message].filter(Boolean).join('\n')]
+            [lead.name, c.email, c.phone, c.notes]
         );
         await client.query(`UPDATE leads SET status = 'convertido' WHERE id = $1`, [id]);
         await client.query('COMMIT');

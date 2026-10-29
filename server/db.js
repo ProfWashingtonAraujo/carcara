@@ -83,11 +83,30 @@ CREATE INDEX IF NOT EXISTS projects_client_idx ON projects (client_id);
 CREATE INDEX IF NOT EXISTS payments_project_idx ON payments (project_id);
 `;
 
+const TABLES = ['users', 'clients', 'projects', 'payments', 'leads'];
+const quoteIdent = name => `"${name.replace(/"/g, '""')}"`;
+
+// Row Level Security: só o papel que a API usa enxerga linhas. Qualquer outro papel (ex.: o Data API
+// do Neon, ou uma credencial vazada de outro serviço) cai na regra padrão de negar tudo.
+async function secureTables() {
+    const { rows: [{ me }] } = await pool.query('SELECT current_user AS me');
+    const role = quoteIdent(me);
+    const policy = `app_access_${require('crypto').createHash('md5').update(me).digest('hex').slice(0, 8)}`;
+    for (const table of TABLES) {
+        await pool.query(`ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY`);
+        await pool.query(`ALTER TABLE ${table} FORCE ROW LEVEL SECURITY`);
+        const { rowCount } = await pool.query('SELECT 1 FROM pg_policies WHERE tablename = $1 AND policyname = $2', [table, policy]);
+        if (!rowCount) await pool.query(`CREATE POLICY ${policy} ON ${table} FOR ALL TO ${role} USING (true) WITH CHECK (true)`);
+    }
+}
+
 // Cria as tabelas e, se ainda não houver usuários, o administrador definido no ambiente
 async function init() {
     await pool.query(SCHEMA);
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT');
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0');
+
+    await secureTables();
 
     const { rows } = await pool.query('SELECT count(*)::int AS n FROM users');
     if (rows[0].n > 0) return;
