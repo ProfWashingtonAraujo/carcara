@@ -72,7 +72,7 @@ async function saveAvatar(avatar) {
 
 // ===== ESTADO =====
 const isAdmin = () => state.user?.role === 'admin';
-const state = { user: null, clients: [], projects: [], payments: [], leads: [], users: [], summary: null, view: 'dashboard', query: '', exportMonth: isoToday().slice(0, 7) };
+const state = { user: null, clients: [], projects: [], payments: [], leads: [], testimonials: [], users: [], summary: null, view: 'dashboard', query: '', exportMonth: isoToday().slice(0, 7) };
 
 const VIEWS = {
     dashboard: { subtitle: 'Visão geral do seu negócio.', render: renderDashboard },
@@ -80,14 +80,15 @@ const VIEWS = {
     projetos: { subtitle: 'Acompanhe etapas, prazos e progresso.', render: renderProjects, newLabel: 'Novo projeto', onNew: () => openForm('projects') },
     solicitacoes: { subtitle: 'Pedidos recebidos pelo formulário do site.', render: renderLeads },
     financeiro: { subtitle: 'Recebimentos e valores a receber.', render: renderFinance, newLabel: 'Novo lançamento', onNew: () => openForm('payments') },
+    depoimentos: { subtitle: 'Depoimentos reais de clientes: só vão ao site depois de aprovados por você.', render: renderTestimonials, newLabel: 'Registrar depoimento', onNew: () => openForm('testimonials') },
     usuarios: { subtitle: 'Quem tem acesso a este painel.', render: renderUsers, newLabel: 'Novo usuário', onNew: () => openForm('users') }
 };
 
 async function loadAll() {
-    const [clients, projects, payments, leads, users, summary] = await Promise.all([
-        api('/clients'), api('/projects'), api('/payments'), api('/leads'), api('/users'), api('/summary')
+    const [clients, projects, payments, leads, users, summary, testimonials] = await Promise.all([
+        api('/clients'), api('/projects'), api('/payments'), api('/leads'), api('/users'), api('/summary'), api('/testimonials')
     ]);
-    Object.assign(state, { clients, projects, payments, leads, users, summary });
+    Object.assign(state, { clients, projects, payments, leads, users, summary, testimonials });
     $('#loadError').hidden = true;
     renderAll();
 }
@@ -97,6 +98,10 @@ function renderAll() {
     const badge = $('#leadBadge');
     badge.hidden = !unread;
     badge.textContent = unread;
+    const waiting = state.testimonials.filter(t => t.status === 'pendente').length;
+    const tBadge = $('#testimonialBadge');
+    tBadge.hidden = !waiting;
+    tBadge.textContent = waiting;
     renderView();
     renderCalendar();
 }
@@ -205,7 +210,7 @@ function go(view, { push = true } = {}) {
     });
     $('#subtitle').textContent = VIEWS[view].subtitle;
     const newBtn = $('#newBtn');
-    newBtn.hidden = !VIEWS[view].onNew || (view === 'usuarios' && !isAdmin());
+    newBtn.hidden = !VIEWS[view].onNew || (['usuarios', 'depoimentos'].includes(view) && !isAdmin());
     $('#newLabel').textContent = VIEWS[view].newLabel || 'Novo';
     $('#search').closest('.search').hidden = view === 'dashboard';
     $('#main').scrollTo({ top: 0 });
@@ -413,6 +418,36 @@ function renderProjects() {
     return `<div class="board">${cols}</div>`;
 }
 
+// ===== DEPOIMENTOS =====
+const TESTIMONIAL = {
+    status: { convite: 'Aguardando o cliente', pendente: 'Aguardando aprovação', aprovado: 'No ar', rejeitado: 'Rejeitado' },
+    tone: { convite: 'info', pendente: 'warn', aprovado: 'ok', rejeitado: 'muted' }
+};
+
+function renderTestimonials() {
+    const list = state.testimonials.filter(t => matches(t.author_name, t.author_role, t.body, t.client_name));
+    const head = `<div class="actions" style="margin-bottom:14px"><button class="btn sm primary" data-act="invite"><i class="fas fa-link"></i> Gerar link de convite</button></div>`;
+    const note = `<p class="hint">Só depoimentos aprovados aparecem no site; sem nenhum, a seção fica oculta. O link de convite vale 30 dias, serve para um único envio e só é exibido na hora em que é gerado.</p>`;
+    if (!list.length) return head + empty(state.testimonials.length ? 'Nenhum depoimento encontrado.' : 'Nenhum depoimento ainda. Gere um link de convite e envie ao cliente.') + note;
+    return `${head}<div class="stack">${list.map(t => `
+        <article class="card lead ${t.status === 'pendente' ? 'new' : ''}">
+            <div class="lead-head">
+                <div><strong>${esc(t.author_name)}</strong><span>${esc([t.author_role, t.client_name && `Cliente: ${t.client_name}`].filter(Boolean).join(' · '))}</span></div>
+                <div class="lead-side">${pill(TESTIMONIAL.tone[t.status], TESTIMONIAL.status[t.status])}<small>${new Date(t.created_at).toLocaleDateString('pt-BR')}</small></div>
+            </div>
+            ${t.status === 'convite'
+                ? `<p>Convite enviado; expira em ${new Date(t.invite_expires_at).toLocaleDateString('pt-BR')}.</p>`
+                : `<p>“${esc(t.body)}”</p>
+                   <div class="chips"><span>${t.source === 'manual' ? 'Registrado por você' : 'Enviado pelo cliente'}</span><span>Autorização: ${t.consent_note ? esc(t.consent_note) : `aceita em ${new Date(t.consent_at).toLocaleDateString('pt-BR')}`}</span></div>`}
+            ${isAdmin() ? `<div class="actions">
+                ${t.status !== 'convite' && t.status !== 'aprovado' ? `<button class="btn sm primary" data-act="t-approve" data-id="${t.id}"><i class="fas fa-check"></i> Aprovar e publicar</button>` : ''}
+                ${t.status === 'aprovado' ? `<button class="btn sm ghost-dark" data-act="t-pending" data-id="${t.id}">Tirar do ar</button>` : ''}
+                ${t.status === 'pendente' ? `<button class="btn sm ghost-dark" data-act="t-reject" data-id="${t.id}">Rejeitar</button>` : ''}
+                <button class="btn sm ghost-dark danger-txt" data-act="t-delete" data-id="${t.id}" aria-label="Excluir"><i class="fas fa-trash"></i></button>
+            </div>` : ''}
+        </article>`).join('')}</div>${note}`;
+}
+
 // ===== SOLICITAÇÕES =====
 function renderLeads() {
     const list = state.leads.filter(l => matches(l.name, l.email, l.service, l.message));
@@ -505,7 +540,14 @@ async function runAction(act, id) {
         else if (act === 'unpay') await api(`/payments/${id}`, { method: 'PUT', body: { paid_at: '' } });
         else if (act === 'lead-contact') await api(`/leads/${id}`, { method: 'PUT', body: { status: 'contato' } });
         else if (act === 'lead-discard') await api(`/leads/${id}`, { method: 'PUT', body: { status: 'descartado' } });
-        else if (act === 'lead-delete') {
+        else if (act === 'invite') return openForm('invites');
+        else if (act === 't-approve') { await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'aprovado' } }); toast('Publicado no site.'); }
+        else if (act === 't-pending') await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'pendente' } });
+        else if (act === 't-reject') await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'rejeitado' } });
+        else if (act === 't-delete') {
+            if (!confirm('Excluir este depoimento?')) return;
+            await api(`/testimonials/${id}`, { method: 'DELETE' });
+        } else if (act === 'lead-delete') {
             if (!confirm('Excluir esta solicitação?')) return;
             await api(`/leads/${id}`, { method: 'DELETE' });
         } else if (act === 'convert') {
@@ -555,6 +597,22 @@ const FORMS = {
             ...(record && record.id === state.user.id ? [{ key: 'current_password', label: 'Senha atual (obrigatória só para trocar a senha)', type: 'password', full: true, noPrefill: true, maxlength: 72 }] : []),
             { key: 'password', label: record ? 'Nova senha (deixe em branco para manter)' : 'Senha (mín. 10 caracteres)', type: 'password', required: !record, full: true, noPrefill: true, minlength: 10, maxlength: 72 },
             { key: 'password_confirm', label: record ? 'Confirmar nova senha' : 'Confirmar senha', type: 'password', required: !record, full: true, noPrefill: true, maxlength: 72 }
+        ]
+    },
+    invites: {
+        title: 'convite de depoimento', list: () => [],
+        fields: () => [
+            { key: 'client_id', label: 'Para qual cliente?', type: 'select', required: true, full: true, options: [{ value: '', label: 'Selecione um cliente' }, ...state.clients.map(c => ({ value: c.id, label: `${c.name}${c.company ? ` · ${c.company}` : ''}` }))] }
+        ]
+    },
+    testimonials: {
+        title: 'depoimento recebido por fora', list: () => [],
+        fields: () => [
+            { key: 'client_id', label: 'Cliente', type: 'select', full: true, options: [{ value: '', label: 'Sem vínculo' }, ...state.clients.map(c => ({ value: c.id, label: `${c.name}${c.company ? ` · ${c.company}` : ''}` }))] },
+            { key: 'author_name', label: 'Nome de quem escreveu', required: true },
+            { key: 'author_role', label: 'Cargo e empresa' },
+            { key: 'body', label: 'Depoimento (como foi enviado, sem alterações)', type: 'textarea', required: true, full: true },
+            { key: 'consent_note', label: 'Como o cliente autorizou a publicação', required: true, full: true, placeholder: 'Ex.: autorizou por WhatsApp em 28/10/2026' }
         ]
     },
     payments: {
@@ -635,6 +693,7 @@ $('#entityForm').addEventListener('submit', async e => {
     try {
         const path = `/${editing.kind}${editing.id ? `/${editing.id}` : ''}`;
         const saved = await api(path, { method: editing.id ? 'PUT' : 'POST', body });
+        if (editing.kind === 'invites') await shareInvite(saved);
         if (editing.kind === 'users' && editing.id === state.user.id) { // atualiza nome/e-mail exibidos
             state.user = { ...state.user, name: saved.name, email: saved.email, role: saved.role };
             showApp();
@@ -649,6 +708,15 @@ $('#entityForm').addEventListener('submit', async e => {
         btn.disabled = false;
     }
 });
+
+// o link só existe neste momento (o servidor guarda apenas o hash): copia e mostra para o envio
+async function shareInvite({ token }) {
+    const link = `${location.origin}/depoimento.html#${token}`;
+    let copied = false;
+    try { await navigator.clipboard.writeText(link); copied = true; } catch { /* sem permissão da área de transferência */ }
+    closeForm();
+    window.prompt(copied ? 'Link copiado! Envie ao cliente (vale 30 dias, uso único):' : 'Copie o link e envie ao cliente (vale 30 dias, uso único):', link);
+}
 
 $('#formDelete').addEventListener('click', async () => {
     const what = { clients: 'este cliente (os projetos dele ficam sem cliente)', projects: 'este projeto e todos os seus lançamentos financeiros', payments: 'este lançamento', users: 'este usuário (ele perde o acesso imediatamente)' }[editing.kind];

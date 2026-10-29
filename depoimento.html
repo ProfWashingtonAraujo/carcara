@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#0f2947">
+    <title>Seu depoimento | Carcará Tecnologia</title>
+    <link rel="icon" href="src/images/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="depoimento.css">
+</head>
+<body>
+    <main class="wrap">
+        <img class="logo" src="src/images/favicon.svg" alt="Carcará Tecnologia" width="44" height="44">
+
+        <section id="loading" class="card" aria-live="polite"><p>Verificando seu convite...</p></section>
+
+        <section id="invalid" class="card" hidden>
+            <h1>Convite indisponível</h1>
+            <p>Este link já foi usado, expirou ou não é válido. Se quiser deixar seu depoimento, peça um novo link à equipe da Carcará.</p>
+        </section>
+
+        <section id="done" class="card" hidden>
+            <h1>Obrigado!</h1>
+            <p>Recebemos o seu depoimento. Ele será revisado pela equipe antes de ser publicado no site.</p>
+        </section>
+
+        <form id="form" class="card" novalidate hidden>
+            <h1>Conte como foi trabalhar com a Carcará</h1>
+            <p class="lead">Olá, <strong id="who"></strong>! Seu relato verdadeiro ajuda outras empresas a nos conhecer.</p>
+
+            <label for="author_name">Seu nome</label>
+            <input id="author_name" maxlength="120" autocomplete="name" required>
+
+            <label for="author_role">Cargo e empresa <em>(opcional)</em></label>
+            <input id="author_role" maxlength="120" placeholder="Ex.: Diretora, Padaria Sabor da Terra" autocomplete="organization-title">
+
+            <label for="body">Seu depoimento</label>
+            <textarea id="body" rows="6" maxlength="600" minlength="20" required placeholder="O que foi desenvolvido? Como foi o atendimento? O que mudou no seu dia a dia?"></textarea>
+            <small id="counter">0 / 600</small>
+
+            <label class="consent">
+                <input type="checkbox" id="consent" required>
+                <span>Autorizo a Carcará Tecnologia a publicar este depoimento, com meu nome e cargo/empresa, no site e em materiais de divulgação. Posso pedir a remoção a qualquer momento entrando em contato pelo site.</span>
+            </label>
+
+            <p id="error" class="error" role="alert" hidden></p>
+            <button id="send" type="submit">Enviar depoimento</button>
+        </form>
+    </main>
+    <script src="depoimento.js"></script>
+</body>
+</html>

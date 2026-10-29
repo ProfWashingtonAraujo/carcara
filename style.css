@@ -702,6 +702,16 @@ section {
     width: 50px;
 }
 
+div.testimonial-avatar {
+    align-items: center;
+    background: var(--accent-orange);
+    color: var(--white);
+    display: flex;
+    flex: none;
+    font-weight: 700;
+    justify-content: center;
+}
+
 .testimonial-info h5 {
     margin-bottom: 0.25rem;
 }

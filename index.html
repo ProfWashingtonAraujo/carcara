@@ -421,78 +421,15 @@
         </div>
     </section>
 
-    <!-- Depoimentos -->
-    <section class="testimonials">
+    <!-- Depoimentos: só aparecem depoimentos reais, aprovados no painel (veja loadTestimonials em script.js) -->
+    <section class="testimonials" id="testimonials" hidden>
         <div class="container">
             <span class="section-kicker reveal reveal-fade-up">Depoimentos</span>
             <h2 class="section-title reveal reveal-fade-up reveal-delay-1">O que clientes destacam no trabalho conosco
             </h2>
             <div id="testimonialCarousel" class="carousel slide reveal reveal-scale reveal-delay-2"
                 data-bs-ride="carousel">
-                <div class="carousel-inner">
-                    <div class="carousel-item active">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-8">
-                                <div class="testimonial-card">
-                                    <div class="testimonial-text">
-                                        <p>A Carcará Tecnologia desenvolveu um sistema de gestão completo para nossa
-                                            empresa que transformou nossa operação. A equipe foi extremamente
-                                            profissional e o resultado superou nossas expectativas.</p>
-                                    </div>
-                                    <div class="testimonial-author">
-                                        <img src="src/images/client-1.webp" alt="Ana Silva" width="50" height="50" loading="lazy" class="testimonial-avatar">
-                                        <div class="testimonial-info">
-                                            <h5>Ana Silva</h5>
-                                            <p>Diretora Comercial, Empresa XYZ</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="carousel-item">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-8">
-                                <div class="testimonial-card">
-                                    <div class="testimonial-text">
-                                        <p>O aplicativo desenvolvido pela Carcará revolucionou a forma como nossos
-                                            clientes interagem com nossa marca. A equipe entendeu perfeitamente nossa
-                                            necessidade e entregou uma solução de alta qualidade.</p>
-                                    </div>
-                                    <div class="testimonial-author">
-                                        <img src="src/images/client-2.webp" alt="Roberto Lima"
-                                            width="50" height="50" loading="lazy" class="testimonial-avatar">
-                                        <div class="testimonial-info">
-                                            <h5>Roberto Lima</h5>
-                                            <p>CEO, Startup Inovadora</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="carousel-item">
-                        <div class="row justify-content-center">
-                            <div class="col-lg-8">
-                                <div class="testimonial-card">
-                                    <div class="testimonial-text">
-                                        <p>Trabalhamos com a Carcará em múltiplos projetos e sempre ficamos
-                                            impressionados com a qualidade do código, a atenção aos detalhes e o
-                                            comprometimento com os prazos. Recomendamos sem hesitar!</p>
-                                    </div>
-                                    <div class="testimonial-author">
-                                        <img src="src/images/client-3.webp" alt="Mariana Costa"
-                                            width="50" height="50" loading="lazy" class="testimonial-avatar">
-                                        <div class="testimonial-info">
-                                            <h5>Mariana Costa</h5>
-                                            <p>Gerente de TI, Grupo Empresarial</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div class="carousel-inner"></div>
                 <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel"
                     data-bs-slide="prev">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>

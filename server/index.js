@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* sem .env: usa o ambiente */ }
@@ -196,6 +197,53 @@ app.post('/api/leads', leadLimiter, wrap(async (req, res) => {
         'INSERT INTO leads (name, email, phone, service, budget, deadline, message) VALUES ($1,$2,$3,$4,$5,$6,$7)',
         [e.name, e.email, e.phone ?? null, e.service ?? null, e.budget ?? null, e.deadline ?? null, e.message]
     );
+    res.status(201).json({ ok: true });
+}));
+
+// ===== Depoimentos (público) =====
+// O cliente recebe um link com um token aleatório (só o hash fica no banco, uso único, com validade).
+// O envio vira "pendente" e só aparece no site depois de aprovado no painel.
+const INVITE_DAYS = 30;
+const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
+const hashToken = t => crypto.createHash('sha256').update(t).digest('hex');
+const inviteToken = req => {
+    if (!TOKEN_RE.test(String(req.params.token))) throw new HttpError(404, 'Convite inválido ou expirado.');
+    return req.params.token;
+};
+const testimonialLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas tentativas. Tente novamente mais tarde.' } });
+const publicReadLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false });
+
+const TESTIMONIAL_SCHEMA = {
+    author_name: { required: true, label: 'Nome', max: 120 },
+    author_role: { max: 120, label: 'Cargo e empresa' },
+    body: { required: true, label: 'Depoimento', max: 600 }
+};
+
+app.get('/api/testimonials/public', publicReadLimiter, wrap(async (req, res) => {
+    const { rows } = await pool.query(
+        `SELECT author_name, author_role, body FROM testimonials WHERE status = 'aprovado' ORDER BY published_at DESC LIMIT 12`);
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(rows);
+}));
+
+app.get('/api/testimonials/invite/:token', testimonialLimiter, wrap(async (req, res) => {
+    const { rows: [invite] } = await pool.query(
+        `SELECT author_name FROM testimonials WHERE invite_hash = $1 AND status = 'convite' AND invite_expires_at > now()`, [hashToken(inviteToken(req))]);
+    if (!invite) throw new HttpError(404, 'Convite inválido ou expirado.');
+    res.json({ name: invite.author_name });
+}));
+
+app.post('/api/testimonials/invite/:token', testimonialLimiter, wrap(async (req, res) => {
+    const token = inviteToken(req);
+    const d = parseBody(TESTIMONIAL_SCHEMA, req.body);
+    if (req.body?.consent !== true) throw new HttpError(400, 'É preciso autorizar a publicação do depoimento.');
+    if (d.body.length < 20) throw new HttpError(400, 'Escreva um pouco mais: o depoimento precisa ter ao menos 20 caracteres.');
+    // um único UPDATE confere validade e uso único: duas requisições simultâneas não gravam duas vezes
+    const { rowCount } = await pool.query(
+        `UPDATE testimonials SET author_name = $1, author_role = $2, body = $3, consent_at = now(), status = 'pendente', invite_hash = NULL, invite_expires_at = NULL
+         WHERE invite_hash = $4 AND status = 'convite' AND invite_expires_at > now()`,
+        [d.author_name, d.author_role ?? null, d.body, hashToken(token)]);
+    if (!rowCount) throw new HttpError(404, 'Convite inválido ou expirado.');
     res.status(201).json({ ok: true });
 }));
 
@@ -432,6 +480,59 @@ api.get('/export/:report', wrap(async (req, res) => {
     res.send(Buffer.from(file));
 }));
 
+// ===== Depoimentos (painel) =====
+api.get('/testimonials', wrap(async (req, res) => {
+    const { rows } = await pool.query(
+        `SELECT t.id, t.client_id, c.name AS client_name, t.author_name, t.author_role, t.body, t.source, t.status,
+                t.consent_at, t.consent_note, t.invite_expires_at, t.published_at, t.created_at
+         FROM testimonials t LEFT JOIN clients c ON c.id = t.client_id
+         ORDER BY CASE t.status WHEN 'pendente' THEN 0 WHEN 'convite' THEN 1 WHEN 'aprovado' THEN 2 ELSE 3 END, t.created_at DESC LIMIT 500`);
+    res.json(rows);
+}));
+
+// gera o link de convite para um cliente; o token só aparece nesta resposta
+api.post('/invites', wrap(async (req, res) => {
+    const { client_id } = parseBody({ client_id: { required: true, type: 'int', min: 1, label: 'Cliente' } }, req.body);
+    const { rows: [client] } = await pool.query('SELECT name FROM clients WHERE id = $1', [client_id]);
+    if (!client) throw new HttpError(400, 'Cliente não encontrado');
+    const token = crypto.randomBytes(32).toString('base64url');
+    const { rows: [row] } = await pool.query(
+        `INSERT INTO testimonials (client_id, author_name, source, status, invite_hash, invite_expires_at)
+         VALUES ($1, $2, 'convite', 'convite', $3, now() + make_interval(days => $4)) RETURNING id, invite_expires_at`,
+        [client_id, client.name, hashToken(token), INVITE_DAYS]);
+    res.status(201).json({ id: row.id, token, expires_at: row.invite_expires_at });
+}));
+
+// depoimento recebido por fora (WhatsApp, e-mail): exige registrar de onde veio a autorização
+api.post('/testimonials', requireAdmin, wrap(async (req, res) => {
+    const d = parseBody({
+        ...TESTIMONIAL_SCHEMA,
+        client_id: { type: 'int', min: 1, nullable: true, label: 'Cliente' },
+        consent_note: { required: true, max: 300, label: 'Como o cliente autorizou' }
+    }, req.body);
+    const { rows: [row] } = await pool.query(
+        `INSERT INTO testimonials (client_id, author_name, author_role, body, source, status, consent_at, consent_note)
+         VALUES ($1, $2, $3, $4, 'manual', 'pendente', now(), $5) RETURNING id`,
+        [d.client_id ?? null, d.author_name, d.author_role ?? null, d.body, d.consent_note]);
+    res.status(201).json({ id: row.id });
+}));
+
+// aprovar, rejeitar ou voltar para pendente; o texto nunca é editado
+api.put('/testimonials/:id', requireAdmin, wrap(async (req, res) => {
+    const { status } = parseBody({ status: { required: true, enum: ['pendente', 'aprovado', 'rejeitado'], label: 'Status' } }, req.body);
+    const { rowCount } = await pool.query(
+        `UPDATE testimonials SET status = $1::text, published_at = CASE WHEN $1::text = 'aprovado' THEN now() ELSE NULL END
+         WHERE id = $2 AND status <> 'convite'`, [status, idParam(req)]);
+    if (!rowCount) throw new HttpError(404, 'Depoimento não encontrado');
+    res.json({ ok: true });
+}));
+
+api.delete('/testimonials/:id', requireAdmin, wrap(async (req, res) => {
+    const { rowCount } = await pool.query('DELETE FROM testimonials WHERE id = $1', [idParam(req)]);
+    if (!rowCount) throw new HttpError(404, 'Depoimento não encontrado');
+    res.json({ ok: true });
+}));
+
 // Resumo para a dashboard
 api.get('/summary', wrap(async (req, res) => {
     const q = sql => pool.query(sql).then(r => r.rows);
@@ -461,7 +562,7 @@ app.use('/api', api);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada' }));
 
 // ===== Arquivos estáticos (uso local; em produção a Vercel serve o front) =====
-for (const file of ['index.html', 'style.css', 'script.js']) {
+for (const file of ['index.html', 'style.css', 'script.js', 'depoimento.html', 'depoimento.css', 'depoimento.js']) {
     app.get(file === 'index.html' ? '/' : `/${file}`, (req, res) => res.sendFile(path.join(ROOT, file)));
 }
 app.use('/src', express.static(path.join(ROOT, 'src')));

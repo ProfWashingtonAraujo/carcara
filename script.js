@@ -214,8 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    const myCarousel = document.querySelector('#testimonialCarousel');
-    if (myCarousel) {
+    function startCarousel(myCarousel) {
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         new bootstrap.Carousel(myCarousel, {
             interval: reduceMotion ? false : 5000,
@@ -239,7 +238,55 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('load', equalizeSlides);
         window.addEventListener('resize', equalizeSlides);
     }
+
+    const myCarousel = document.querySelector('#testimonialCarousel');
+    if (myCarousel) loadTestimonials(myCarousel).then(shown => { if (shown) startCarousel(myCarousel); });
 });
+
+// Busca os depoimentos aprovados no painel. Sem nenhum (ou com a API fora do ar), a seção continua oculta.
+async function loadTestimonials(carousel) {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch('/api/testimonials/public', { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return false;
+        const items = await res.json();
+        if (!Array.isArray(items) || !items.length) return false;
+
+        const inner = carousel.querySelector('.carousel-inner');
+        const el = (tag, className, text) => {
+            const node = document.createElement(tag);
+            if (className) node.className = className;
+            if (text !== undefined) node.textContent = text;
+            return node;
+        };
+        items.forEach((t, i) => {
+            const card = el('div', 'testimonial-card');
+            const quote = el('div', 'testimonial-text');
+            quote.append(el('p', '', t.body));
+            const info = el('div', 'testimonial-info');
+            info.append(el('h5', '', t.author_name));
+            if (t.author_role) info.append(el('p', '', t.author_role));
+            const author = el('div', 'testimonial-author');
+            author.append(el('div', 'testimonial-avatar', t.author_name.trim().charAt(0).toUpperCase()), info);
+            card.append(quote, author);
+            const col = el('div', 'col-lg-8');
+            col.append(card);
+            const row = el('div', 'row justify-content-center');
+            row.append(col);
+            const item = el('div', i === 0 ? 'carousel-item active' : 'carousel-item');
+            item.append(row);
+            inner.append(item);
+        });
+        // com um só depoimento não há o que navegar
+        carousel.querySelectorAll('.carousel-control-prev, .carousel-control-next').forEach(b => { b.hidden = items.length < 2; });
+        carousel.closest('section').hidden = false;
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 // ===== ANIMAÇÃO AO SCROLL (Intersection Observer) =====
 const observerOptions = {

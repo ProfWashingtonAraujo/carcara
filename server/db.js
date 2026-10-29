@@ -79,11 +79,30 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_next_steps TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_reply TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS ai_at TIMESTAMPTZ;
 
+-- depoimentos: nascem de um convite (status 'convite', só o hash do link fica guardado) ou de um cadastro manual;
+-- só vão ao site depois de aprovados no painel
+CREATE TABLE IF NOT EXISTS testimonials (
+    id SERIAL PRIMARY KEY,
+    client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+    author_name TEXT NOT NULL,
+    author_role TEXT,
+    body TEXT,
+    source TEXT NOT NULL DEFAULT 'convite' CHECK (source IN ('convite', 'manual')),
+    status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('convite', 'pendente', 'aprovado', 'rejeitado')),
+    consent_at TIMESTAMPTZ,
+    consent_note TEXT,
+    invite_hash TEXT UNIQUE,
+    invite_expires_at TIMESTAMPTZ,
+    published_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (status IN ('convite', 'rejeitado') OR (body IS NOT NULL AND consent_at IS NOT NULL))
+);
+
 CREATE INDEX IF NOT EXISTS projects_client_idx ON projects (client_id);
 CREATE INDEX IF NOT EXISTS payments_project_idx ON payments (project_id);
 `;
 
-const TABLES = ['users', 'clients', 'projects', 'payments', 'leads'];
+const TABLES = ['users', 'clients', 'projects', 'payments', 'leads', 'testimonials'];
 const quoteIdent = name => `"${name.replace(/"/g, '""')}"`;
 
 // Row Level Security: só o papel que a API usa enxerga linhas. Qualquer outro papel (ex.: o Data API
