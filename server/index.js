@@ -34,7 +34,7 @@ app.use(helmet({
             scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com', 'https://fonts.googleapis.com'],
             fontSrc: ["'self'", 'https://cdnjs.cloudflare.com', 'https://fonts.gstatic.com'],
-            imgSrc: ["'self'", 'data:', 'https://images.unsplash.com'],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https://images.unsplash.com'],
             frameSrc: ['https://www.google.com'],
             connectSrc: ["'self'", 'https://formsubmit.co'],
             formAction: ["'self'", 'https://formsubmit.co'],
