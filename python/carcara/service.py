@@ -23,7 +23,11 @@ _lock = threading.Lock()
 
 
 def client_ip(request: Request) -> str:
-    # atrás de proxy, o uvicorn (--proxy-headers) já troca client.host pelo IP real; não confiar em X-Forwarded-For aqui
+    # o Render acrescenta o IP real do cliente ao fim do X-Forwarded-For; o que vem antes é forjável
+    forwarded = request.headers.get("x-forwarded-for", "")
+    last = forwarded.rsplit(",", 1)[-1].strip()
+    if last:
+        return last
     return request.client.host if request.client else "?"
 
 

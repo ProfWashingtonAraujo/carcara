@@ -12,6 +12,9 @@ on:
         type: choice
         options: [alerts, triage, report]
 
+permissions:
+  contents: read
+
 defaults:
   run:
     working-directory: python
@@ -46,18 +49,25 @@ jobs:
 
       - name: Definir tarefa
         id: tarefa
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          TAREFA: ${{ inputs.tarefa }}
         run: |
-          case "${{ github.event_name }}:${{ github.event.schedule }}" in
+          case "$EVENT:$SCHEDULE" in
             schedule:'0 11 * * *')   echo "nome=alerts" >> "$GITHUB_OUTPUT" ;;
             schedule:'15 */3 * * *') echo "nome=triage" >> "$GITHUB_OUTPUT" ;;
             schedule:'0 12 1 * *')   echo "nome=report" >> "$GITHUB_OUTPUT" ;;
-            *)                       echo "nome=${{ inputs.tarefa }}" >> "$GITHUB_OUTPUT" ;;
+            *)                       echo "nome=$TAREFA" >> "$GITHUB_OUTPUT" ;;
           esac
 
       - name: Executar
+        env:
+          TAREFA_NOME: ${{ steps.tarefa.outputs.nome }}
         run: |
-          case "${{ steps.tarefa.outputs.nome }}" in
+          case "$TAREFA_NOME" in
             triage) if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$AI_API_KEY" ]; then echo "Nenhuma chave de IA configurada (AI_API_KEY ou ANTHROPIC_API_KEY): triagem ignorada."; else python -m carcara triage; fi ;;
             report) python -m carcara report --email ;;
-            *)      python -m carcara ${{ steps.tarefa.outputs.nome }} ;;
+            alerts) python -m carcara alerts ;;
+            *)      echo "Tarefa desconhecida: $TAREFA_NOME"; exit 1 ;;
           esac

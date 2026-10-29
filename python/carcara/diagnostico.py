@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 MAX_BYTES = 2_000_000
 MAX_REDIRECTS = 3
 TIMEOUT = 10.0
+DEADLINE = 15.0  # prazo total da busca, incluindo redirecionamentos e leitura do corpo
 ALLOWED_PORTS = {None, 80, 443}
 
 
@@ -42,7 +43,8 @@ def normalize_url(raw: str) -> str:
     return raw
 
 
-def assert_public(host: str) -> None:
+def assert_public(host: str) -> str:
+    """Recusa endereços não públicos e devolve o IP validado, para a conexão usar exatamente ele."""
     try:
         infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
     except socket.gaierror:
@@ -51,6 +53,24 @@ def assert_public(host: str) -> None:
         ip = ipaddress.ip_address(info[4][0])
         if not ip.is_global:
             raise UrlRejected("Este endereço não é público.")
+    return infos[0][4][0]
+
+
+def pinned(url: str, ip: str) -> tuple[str, dict, dict]:
+    """Reescreve a URL para conectar ao IP já validado (evita DNS rebinding entre a checagem e a conexão)."""
+    parsed = urlparse(url)
+    host = parsed.hostname
+    try:
+        ipaddress.ip_address(host)
+        return url, {}, {}  # já é um IP literal
+    except ValueError:
+        pass
+    netloc = f"[{ip}]" if ":" in ip else ip
+    if parsed.port:
+        netloc += f":{parsed.port}"
+    headers = {"Host": parsed.netloc}
+    extensions = {"sni_hostname": host} if parsed.scheme == "https" else {}
+    return parsed._replace(netloc=netloc).geturl(), headers, extensions
 
 
 @dataclass
@@ -67,11 +87,13 @@ def fetch(raw_url: str, client: httpx.Client | None = None) -> Fetched:
     url = normalize_url(raw_url)
     own = client is None
     client = client or httpx.Client(follow_redirects=False, timeout=TIMEOUT, headers={"User-Agent": "CarcaraDiagnostico/1.0 (+https://www.carcaratech.com.br)"})
+    deadline = time.monotonic() + DEADLINE
     try:
         for hop in range(MAX_REDIRECTS + 1):
-            assert_public(urlparse(url).hostname)
+            ip = assert_public(urlparse(url).hostname)
+            target, headers, extensions = pinned(url, ip)
             start = time.perf_counter()
-            with client.stream("GET", url) as resp:
+            with client.stream("GET", target, headers=headers, extensions=extensions) as resp:
                 if resp.is_redirect and resp.headers.get("location"):
                     url = normalize_url(urljoin(url, resp.headers["location"]))
                     continue
@@ -80,6 +102,8 @@ def fetch(raw_url: str, client: httpx.Client | None = None) -> Fetched:
                     body += chunk
                     if len(body) > MAX_BYTES:
                         break
+                    if time.monotonic() > deadline:
+                        raise UrlRejected("O site demorou demais para responder.")
                 return Fetched(url, resp.status_code, resp.headers, bytes(body[:MAX_BYTES]), time.perf_counter() - start, hop)
         raise UrlRejected("Redirecionamentos demais.")
     except httpx.HTTPError as exc:

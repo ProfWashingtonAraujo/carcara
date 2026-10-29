@@ -180,10 +180,14 @@ const LEAD_SCHEMA = {
     message: { required: true, max: 3000, label: 'Mensagem' }
 };
 
+const LEADS_PER_DAY = 200;
 app.post('/api/leads', leadLimiter, wrap(async (req, res) => {
     // campo-isca: robôs preenchem, pessoas não
     if (req.body?._honey) return res.status(201).json({ ok: true });
     const d = parseBody(LEAD_SCHEMA, req.body);
+    // teto global: mesmo com IPs trocados, uma enxurrada não enche o banco nem a fila de triagem
+    const { rows: [{ n }] } = await pool.query(`SELECT count(*)::int AS n FROM leads WHERE created_at > now() - interval '1 day'`);
+    if (n >= LEADS_PER_DAY) throw new HttpError(429, 'Muitas solicitações hoje. Tente novamente mais tarde.');
     await pool.query(
         'INSERT INTO leads (name, email, phone, service, budget, deadline, message) VALUES ($1,$2,$3,$4,$5,$6,$7)',
         [d.name, d.email, d.phone ?? null, d.service ?? null, d.budget ?? null, d.deadline ?? null, d.message]
@@ -272,7 +276,7 @@ function parsePassword(value, { required }) {
 const USER_COLS = 'id, name, email, avatar, created_at';
 
 api.get('/users', wrap(async (req, res) => {
-    const { rows } = await pool.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at`);
+    const { rows } = await pool.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at LIMIT 500`);
     res.json(rows);
 }));
 
@@ -316,7 +320,7 @@ for (const [name, r] of Object.entries(RESOURCES)) {
     const table = TABLES[name];
 
     api.get(`/${name}`, wrap(async (req, res) => {
-        const { rows } = await pool.query(`${r.select} ${r.order}`);
+        const { rows } = await pool.query(`${r.select} ${r.order} LIMIT 2000`);
         res.json(rows);
     }));
 
@@ -381,12 +385,12 @@ api.post('/leads/:id/convert', wrap(async (req, res) => {
 
 // Relatórios para download (Excel/PDF)
 api.get('/export/:report', wrap(async (req, res) => {
-    const report = REPORTS[req.params.report];
+    const report = Object.hasOwn(REPORTS, req.params.report) ? REPORTS[req.params.report] : null;
     if (!report) throw new HttpError(404, 'Relatório não encontrado');
     const format = req.query.format;
-    if (!TYPES[format]) throw new HttpError(400, 'Formato inválido. Use xlsx ou pdf.');
+    if (typeof format !== 'string' || !Object.hasOwn(TYPES, format)) throw new HttpError(400, 'Formato inválido. Use xlsx ou pdf.');
     const now = new Date();
-    const month = req.query.month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const month = (typeof req.query.month === 'string' && req.query.month) || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     if (!MONTH_RE.test(month)) throw new HttpError(400, 'Mês inválido. Use o formato AAAA-MM.');
     const file = await report[format](await report.data(pool, month));
     res.set({
