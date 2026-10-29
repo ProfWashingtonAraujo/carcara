@@ -211,6 +211,8 @@ td.num { font-weight: 600; }
 .icon-sm { width: 32px; height: 32px; border-radius: 10px; background: #f1f3f7; color: var(--ink); margin-left: 4px; }
 .icon-sm:hover { background: var(--orange); color: #fff; }
 
+.t-who { display: flex; align-items: center; gap: 12px; }
+.t-photo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; }
 .hint { color: var(--text-dim); font-size: .8rem; margin-top: 16px; }
 
 /* ===== Botões e formulários ===== */

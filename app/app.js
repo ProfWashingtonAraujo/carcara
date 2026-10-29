@@ -432,7 +432,8 @@ function renderTestimonials() {
     return `${head}<div class="stack">${list.map(t => `
         <article class="card lead ${t.status === 'pendente' ? 'new' : ''}">
             <div class="lead-head">
-                <div><strong>${esc(t.author_name)}</strong><span>${esc([t.author_role, t.client_name && `Cliente: ${t.client_name}`].filter(Boolean).join(' · '))}</span></div>
+                <div class="t-who">${t.has_photo ? `<img class="t-photo" src="/api/testimonials/${t.id}/preview" alt="" width="44" height="44">` : ''}
+                    <div><strong>${esc(t.author_name)}</strong><span>${esc([t.author_role, t.client_name && `Cliente: ${t.client_name}`].filter(Boolean).join(' · '))}</span></div></div>
                 <div class="lead-side">${pill(TESTIMONIAL.tone[t.status], TESTIMONIAL.status[t.status])}<small>${new Date(t.created_at).toLocaleDateString('pt-BR')}</small></div>
             </div>
             ${t.status === 'convite'
@@ -443,6 +444,7 @@ function renderTestimonials() {
                 ${t.status !== 'convite' && t.status !== 'aprovado' ? `<button class="btn sm primary" data-act="t-approve" data-id="${t.id}"><i class="fas fa-check"></i> Aprovar e publicar</button>` : ''}
                 ${t.status === 'aprovado' ? `<button class="btn sm ghost-dark" data-act="t-pending" data-id="${t.id}">Tirar do ar</button>` : ''}
                 ${t.status === 'pendente' ? `<button class="btn sm ghost-dark" data-act="t-reject" data-id="${t.id}">Rejeitar</button>` : ''}
+                ${t.has_photo && t.status !== 'convite' ? `<button class="btn sm ghost-dark" data-act="t-photo-del" data-id="${t.id}">Remover foto</button>` : ''}
                 <button class="btn sm ghost-dark danger-txt" data-act="t-delete" data-id="${t.id}" aria-label="Excluir"><i class="fas fa-trash"></i></button>
             </div>` : ''}
         </article>`).join('')}</div>${note}`;
@@ -544,7 +546,10 @@ async function runAction(act, id) {
         else if (act === 't-approve') { await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'aprovado' } }); toast('Publicado no site.'); }
         else if (act === 't-pending') await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'pendente' } });
         else if (act === 't-reject') await api(`/testimonials/${id}`, { method: 'PUT', body: { status: 'rejeitado' } });
-        else if (act === 't-delete') {
+        else if (act === 't-photo-del') {
+            if (!confirm('Remover só a foto? O texto do depoimento continua.')) return;
+            await api(`/testimonials/${id}/photo`, { method: 'DELETE' });
+        } else if (act === 't-delete') {
             if (!confirm('Excluir este depoimento?')) return;
             await api(`/testimonials/${id}`, { method: 'DELETE' });
         } else if (act === 'lead-delete') {
@@ -612,7 +617,8 @@ const FORMS = {
             { key: 'author_name', label: 'Nome de quem escreveu', required: true },
             { key: 'author_role', label: 'Cargo e empresa' },
             { key: 'body', label: 'Depoimento (como foi enviado, sem alterações)', type: 'textarea', required: true, full: true },
-            { key: 'consent_note', label: 'Como o cliente autorizou a publicação', required: true, full: true, placeholder: 'Ex.: autorizou por WhatsApp em 28/10/2026' }
+            { key: 'photo', label: 'Foto (opcional; só com autorização)', type: 'file', accept: 'image/jpeg,image/png,image/webp', full: true },
+            { key: 'consent_note', label: 'Como o cliente autorizou a publicação (inclua a foto, se houver)', required: true, full: true, placeholder: 'Ex.: autorizou por WhatsApp em 28/10/2026' }
         ]
     },
     payments: {
@@ -634,7 +640,7 @@ function fieldHtml(f, value) {
     const id = `f_${f.key}`;
     const v = value ?? f.def ?? '';
     const req = f.required ? 'required' : '';
-    const attrs = [f.minlength && `minlength="${f.minlength}"`, f.maxlength && `maxlength="${f.maxlength}"`, f.type === 'password' && 'autocomplete="new-password"'].filter(Boolean).join(' ');
+    const attrs = [f.minlength && `minlength="${f.minlength}"`, f.maxlength && `maxlength="${f.maxlength}"`, f.type === 'password' && 'autocomplete="new-password"', f.accept && `accept="${f.accept}"`].filter(Boolean).join(' ');
     let control;
     if (f.type === 'select') {
         control = `<select id="${id}" name="${f.key}" ${req}>${f.options.map(o => `<option value="${esc(o.value)}" ${String(o.value) === String(v) ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`;
@@ -678,6 +684,13 @@ $('#entityForm').addEventListener('submit', async e => {
     let confirmation = '';
     for (const el of $$('#formFields [name]')) {
         if (el.required && !el.value.trim()) { err.textContent = `Preencha o campo "${el.labels[0].textContent.replace('(opcional)', '').trim()}".`; err.hidden = false; return el.focus(); }
+        if (el.type === 'file') { // foto: reduzida no navegador e enviada como data URL
+            if (el.files[0]) {
+                try { body[el.name] = await resizeImage(el.files[0], 200); }
+                catch (error) { err.textContent = error.message; err.hidden = false; return; }
+            }
+            continue;
+        }
         if (el.name === 'password_confirm') { confirmation = el.value; continue; } // só confere; não vai para a API
         if (el.type === 'password' && !el.value) continue; // em edição, vazio mantém a senha atual
         if (el.minLength > 0 && el.value && el.value.length < el.minLength) { err.textContent = `A senha deve ter ao menos ${el.minLength} caracteres.`; err.hidden = false; return el.focus(); }

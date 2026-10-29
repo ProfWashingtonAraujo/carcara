@@ -44,7 +44,8 @@ app.use(helmet({
     }
 }));
 // a foto de perfil (data URL já reduzida no navegador) tem limite próprio, na rota /api/me/avatar
-app.use((req, res, next) => req.path === '/api/me/avatar' ? next() : express.json({ limit: '50kb' })(req, res, next));
+const BIG_BODY = [/^\/api\/me\/avatar$/, /^\/api\/testimonials(\/invite\/[^/]+)?$/]; // foto de perfil e foto de depoimento
+app.use((req, res, next) => BIG_BODY.some(re => re.test(req.path)) ? next() : express.json({ limit: '50kb' })(req, res, next));
 app.use(cookieParser());
 
 // ===== Helpers =====
@@ -219,11 +220,40 @@ const TESTIMONIAL_SCHEMA = {
     body: { required: true, label: 'Depoimento', max: 600 }
 };
 
+// Foto opcional: o navegador já reduz a imagem; aqui só entra JPEG/PNG/WebP pequeno, conferido pelos bytes (nunca SVG)
+const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+=*)$/;
+const sniffImage = b =>
+    b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF ? 'image/jpeg'
+    : b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])) ? 'image/png'
+    : b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP' ? 'image/webp' : null;
+
+function parsePhoto(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const m = typeof value === 'string' && value.length <= 80000 && PHOTO_RE.exec(value);
+    if (!m || sniffImage(Buffer.from(m[2], 'base64')) !== `image/${m[1]}`) throw new HttpError(400, 'Foto inválida. Use JPG, PNG ou WebP de até 60 KB.');
+    return value;
+}
+
+function sendPhoto(res, dataUrl, cacheControl) {
+    const bytes = Buffer.from(dataUrl.slice(dataUrl.indexOf(',') + 1), 'base64');
+    res.set({ 'Content-Type': sniffImage(bytes) || 'application/octet-stream', 'Cache-Control': cacheControl, 'Content-Security-Policy': "default-src 'none'" });
+    res.send(bytes);
+}
+
 app.get('/api/testimonials/public', publicReadLimiter, wrap(async (req, res) => {
     const { rows } = await pool.query(
-        `SELECT author_name, author_role, body FROM testimonials WHERE status = 'aprovado' ORDER BY published_at DESC LIMIT 12`);
+        `SELECT id, author_name, author_role, body, (author_photo IS NOT NULL) AS has_photo, extract(epoch FROM published_at)::bigint AS v
+         FROM testimonials WHERE status = 'aprovado' ORDER BY published_at DESC LIMIT 12`);
     res.set('Cache-Control', 'public, max-age=300');
-    res.json(rows);
+    // a foto tem endereço próprio (?v= muda a cada publicação), para esta lista continuar leve
+    res.json(rows.map(r => ({ author_name: r.author_name, author_role: r.author_role, body: r.body, photo: r.has_photo ? `/api/testimonials/${r.id}/photo?v=${r.v}` : null })));
+}));
+
+// só depoimentos aprovados têm a foto pública
+app.get('/api/testimonials/:id/photo', publicReadLimiter, wrap(async (req, res) => {
+    const { rows: [t] } = await pool.query(`SELECT author_photo FROM testimonials WHERE id = $1 AND status = 'aprovado'`, [idParam(req)]);
+    if (!t?.author_photo) throw new HttpError(404, 'Foto não encontrada');
+    sendPhoto(res, t.author_photo, 'public, max-age=86400');
 }));
 
 app.get('/api/testimonials/invite/:token', testimonialLimiter, wrap(async (req, res) => {
@@ -233,16 +263,17 @@ app.get('/api/testimonials/invite/:token', testimonialLimiter, wrap(async (req, 
     res.json({ name: invite.author_name });
 }));
 
-app.post('/api/testimonials/invite/:token', testimonialLimiter, wrap(async (req, res) => {
+app.post('/api/testimonials/invite/:token', testimonialLimiter, express.json({ limit: '120kb' }), wrap(async (req, res) => {
     const token = inviteToken(req);
     const d = parseBody(TESTIMONIAL_SCHEMA, req.body);
+    const photo = parsePhoto(req.body?.photo);
     if (req.body?.consent !== true) throw new HttpError(400, 'É preciso autorizar a publicação do depoimento.');
     if (d.body.length < 20) throw new HttpError(400, 'Escreva um pouco mais: o depoimento precisa ter ao menos 20 caracteres.');
     // um único UPDATE confere validade e uso único: duas requisições simultâneas não gravam duas vezes
     const { rowCount } = await pool.query(
-        `UPDATE testimonials SET author_name = $1, author_role = $2, body = $3, consent_at = now(), status = 'pendente', invite_hash = NULL, invite_expires_at = NULL
-         WHERE invite_hash = $4 AND status = 'convite' AND invite_expires_at > now()`,
-        [d.author_name, d.author_role ?? null, d.body, hashToken(token)]);
+        `UPDATE testimonials SET author_name = $1, author_role = $2, body = $3, author_photo = $4, consent_at = now(), status = 'pendente', invite_hash = NULL, invite_expires_at = NULL
+         WHERE invite_hash = $5 AND status = 'convite' AND invite_expires_at > now()`,
+        [d.author_name, d.author_role ?? null, d.body, photo, hashToken(token)]);
     if (!rowCount) throw new HttpError(404, 'Convite inválido ou expirado.');
     res.status(201).json({ ok: true });
 }));
@@ -484,7 +515,7 @@ api.get('/export/:report', wrap(async (req, res) => {
 api.get('/testimonials', wrap(async (req, res) => {
     const { rows } = await pool.query(
         `SELECT t.id, t.client_id, c.name AS client_name, t.author_name, t.author_role, t.body, t.source, t.status,
-                t.consent_at, t.consent_note, t.invite_expires_at, t.published_at, t.created_at
+                t.consent_at, t.consent_note, t.invite_expires_at, t.published_at, t.created_at, (t.author_photo IS NOT NULL) AS has_photo
          FROM testimonials t LEFT JOIN clients c ON c.id = t.client_id
          ORDER BY CASE t.status WHEN 'pendente' THEN 0 WHEN 'convite' THEN 1 WHEN 'aprovado' THEN 2 ELSE 3 END, t.created_at DESC LIMIT 500`);
     res.json(rows);
@@ -504,17 +535,31 @@ api.post('/invites', wrap(async (req, res) => {
 }));
 
 // depoimento recebido por fora (WhatsApp, e-mail): exige registrar de onde veio a autorização
-api.post('/testimonials', requireAdmin, wrap(async (req, res) => {
+api.post('/testimonials', requireAdmin, express.json({ limit: '120kb' }), wrap(async (req, res) => {
+    const photo = parsePhoto(req.body?.photo);
     const d = parseBody({
         ...TESTIMONIAL_SCHEMA,
         client_id: { type: 'int', min: 1, nullable: true, label: 'Cliente' },
         consent_note: { required: true, max: 300, label: 'Como o cliente autorizou' }
     }, req.body);
     const { rows: [row] } = await pool.query(
-        `INSERT INTO testimonials (client_id, author_name, author_role, body, source, status, consent_at, consent_note)
-         VALUES ($1, $2, $3, $4, 'manual', 'pendente', now(), $5) RETURNING id`,
-        [d.client_id ?? null, d.author_name, d.author_role ?? null, d.body, d.consent_note]);
+        `INSERT INTO testimonials (client_id, author_name, author_role, body, author_photo, source, status, consent_at, consent_note)
+         VALUES ($1, $2, $3, $4, $5, 'manual', 'pendente', now(), $6) RETURNING id`,
+        [d.client_id ?? null, d.author_name, d.author_role ?? null, d.body, photo, d.consent_note]);
     res.status(201).json({ id: row.id });
+}));
+
+// a foto também é vista antes da aprovação, só por quem está logado
+api.get('/testimonials/:id/preview', wrap(async (req, res) => {
+    const { rows: [t] } = await pool.query('SELECT author_photo FROM testimonials WHERE id = $1', [idParam(req)]);
+    if (!t?.author_photo) throw new HttpError(404, 'Foto não encontrada');
+    sendPhoto(res, t.author_photo, 'private, no-store');
+}));
+
+api.delete('/testimonials/:id/photo', requireAdmin, wrap(async (req, res) => {
+    const { rowCount } = await pool.query('UPDATE testimonials SET author_photo = NULL WHERE id = $1', [idParam(req)]);
+    if (!rowCount) throw new HttpError(404, 'Depoimento não encontrado');
+    res.json({ ok: true });
 }));
 
 // aprovar, rejeitar ou voltar para pendente; o texto nunca é editado
@@ -572,6 +617,7 @@ app.use('/app', express.static(path.join(ROOT, 'app')));
 app.use((err, req, res, next) => {
     if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido' });
+    if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Arquivo grande demais.' });
     if (err.code === '23505') return res.status(409).json({ error: 'Já existe um usuário com esse e-mail.' });
     // violações de chave estrangeira (ex.: cliente inexistente)
     if (err.code === '23503') return res.status(400).json({ error: 'Registro relacionado não existe' });

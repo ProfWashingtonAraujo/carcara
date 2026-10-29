@@ -43,9 +43,15 @@
             <textarea id="body" rows="6" maxlength="600" minlength="20" required placeholder="O que foi desenvolvido? Como foi o atendimento? O que mudou no seu dia a dia?"></textarea>
             <small id="counter">0 / 600</small>
 
+            <label for="photo">Sua foto <em>(opcional)</em></label>
+            <div class="photo-row">
+                <img id="preview" class="photo-preview" alt="" width="64" height="64" hidden>
+                <input id="photo" type="file" accept="image/jpeg,image/png,image/webp">
+            </div>
+
             <label class="consent">
                 <input type="checkbox" id="consent" required>
-                <span>Autorizo a Carcará Tecnologia a publicar este depoimento, com meu nome e cargo/empresa, no site e em materiais de divulgação. Posso pedir a remoção a qualquer momento entrando em contato pelo site.</span>
+                <span>Autorizo a Carcará Tecnologia a publicar este depoimento, com meu nome, cargo/empresa e foto (se enviada), no site e em materiais de divulgação. Posso pedir a remoção a qualquer momento entrando em contato pelo site.</span>
             </label>
 
             <p id="error" class="error" role="alert" hidden></p>

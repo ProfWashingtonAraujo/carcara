@@ -19,6 +19,42 @@ async function start() {
     }
 }
 
+// recorta o centro em quadrado e reduz para 200 px: a foto fica leve e o servidor só recebe a versão reduzida
+let photo = null;
+function resizeImage(file, size = 200) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            const side = Math.min(img.width, img.height);
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            canvas.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível ler a imagem.')); };
+        img.src = url;
+    });
+}
+
+$('photo').addEventListener('change', async () => {
+    const file = $('photo').files[0];
+    photo = null;
+    $('preview').hidden = true;
+    $('error').hidden = true;
+    if (!file) return;
+    try {
+        photo = await resizeImage(file);
+        $('preview').src = photo;
+        $('preview').hidden = false;
+    } catch (err) {
+        $('error').textContent = `${err.message} Escolha uma foto JPG, PNG ou WebP.`;
+        $('error').hidden = false;
+        $('photo').value = '';
+    }
+});
+
 $('body').addEventListener('input', () => { $('counter').textContent = `${$('body').value.length} / 600`; });
 
 $('form').addEventListener('submit', async ev => {
@@ -35,7 +71,7 @@ $('form').addEventListener('submit', async ev => {
         const res = await fetch(`/api/testimonials/invite/${token}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ author_name: $('author_name').value, author_role: $('author_role').value, body, consent: true })
+            body: JSON.stringify({ author_name: $('author_name').value, author_role: $('author_role').value, body, photo, consent: true })
         });
         const data = await res.json().catch(() => ({}));
         if (res.status === 404) return show('invalid');

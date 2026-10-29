@@ -269,7 +269,14 @@ async function loadTestimonials(carousel) {
             info.append(el('h5', '', t.author_name));
             if (t.author_role) info.append(el('p', '', t.author_role));
             const author = el('div', 'testimonial-author');
-            author.append(el('div', 'testimonial-avatar', t.author_name.trim().charAt(0).toUpperCase()), info);
+            let avatar;
+            if (t.photo) {
+                avatar = el('img', 'testimonial-avatar');
+                Object.assign(avatar, { src: t.photo, alt: t.author_name, width: 50, height: 50, loading: 'lazy' });
+            } else {
+                avatar = el('div', 'testimonial-avatar', t.author_name.trim().charAt(0).toUpperCase());
+            }
+            author.append(avatar, info);
             card.append(quote, author);
             const col = el('div', 'col-lg-8');
             col.append(card);

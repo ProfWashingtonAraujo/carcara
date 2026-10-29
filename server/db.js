@@ -98,6 +98,8 @@ CREATE TABLE IF NOT EXISTS testimonials (
     CHECK (status IN ('convite', 'rejeitado') OR (body IS NOT NULL AND consent_at IS NOT NULL))
 );
 
+ALTER TABLE testimonials ADD COLUMN IF NOT EXISTS author_photo TEXT;
+
 CREATE INDEX IF NOT EXISTS projects_client_idx ON projects (client_id);
 CREATE INDEX IF NOT EXISTS payments_project_idx ON payments (project_id);
 `;
