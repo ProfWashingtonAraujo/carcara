@@ -84,7 +84,7 @@ function parseBody(schema, body, { partial = false } = {}) {
                 if (typeof v !== 'string' || !DATE.test(v) || Number.isNaN(Date.parse(v))) throw new HttpError(400, `Data inválida: ${rule.label || key}`);
                 break;
             case 'email':
-                if (typeof v !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || v.length > 200) throw new HttpError(400, 'E-mail inválido');
+                if (typeof v !== 'string' || v.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) throw new HttpError(400, 'E-mail inválido');
                 v = v.trim().toLowerCase();
                 break;
             default:
@@ -107,8 +107,9 @@ async function requireAuth(req, res, next) {
     try {
         const payload = jwt.verify(req.cookies[COOKIE], JWT_SECRET);
         // confere no banco: usuário excluído perde o acesso na hora
-        const { rows } = await pool.query('SELECT id, name, email, avatar FROM users WHERE id = $1', [payload.sub]);
-        if (!rows[0]) throw new Error('usuário inexistente');
+        const { rows } = await pool.query('SELECT id, name, email, avatar, token_version FROM users WHERE id = $1', [payload.sub]);
+        // logout e troca de senha incrementam token_version e invalidam os tokens já emitidos
+        if (!rows[0] || payload.tv !== rows[0].token_version) throw new Error('sessão inválida');
         req.user = rows[0];
         next();
     } catch {
@@ -117,28 +118,43 @@ async function requireAuth(req, res, next) {
 }
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas tentativas. Aguarde alguns minutos.' } });
+// por conta: vale mesmo que o atacante troque de IP (ex.: X-Forwarded-For forjado)
+const loginAccountLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, limit: 8, skipSuccessfulRequests: true, standardHeaders: false, legacyHeaders: false,
+    keyGenerator: req => `acct:${String(req.body?.email || '').trim().toLowerCase().slice(0, 200)}`,
+    message: { error: 'Muitas tentativas. Aguarde alguns minutos.' }
+});
+
+function startSession(res, user) {
+    const token = jwt.sign({ sub: user.id, tv: user.token_version }, JWT_SECRET, { expiresIn: `${SESSION_DAYS}d` });
+    res.cookie(COOKIE, token, { httpOnly: true, secure: PROD, sameSite: 'lax', maxAge: SESSION_DAYS * 864e5, path: '/' });
+}
 const leadLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false, message: { error: 'Muitas solicitações. Tente novamente mais tarde.' } });
 
 // Hash falso para igualar o tempo de resposta quando o e-mail não existe
 const DUMMY_HASH = bcrypt.hashSync('invalido', 12);
 
-app.post('/api/auth/login', loginLimiter, wrap(async (req, res) => {
+app.post('/api/auth/login', loginLimiter, loginAccountLimiter, wrap(async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
-    const { rows } = await pool.query('SELECT id, name, email, avatar, password_hash FROM users WHERE email = $1', [email]);
+    const { rows } = await pool.query('SELECT id, name, email, avatar, password_hash, token_version FROM users WHERE email = $1', [email]);
     const user = rows[0];
     const ok = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
     if (!user || !ok) throw new HttpError(401, 'E-mail ou senha incorretos.');
 
-    const token = jwt.sign({ sub: user.id, name: user.name, email: user.email }, JWT_SECRET, { expiresIn: `${SESSION_DAYS}d` });
-    res.cookie(COOKIE, token, { httpOnly: true, secure: PROD, sameSite: 'lax', maxAge: SESSION_DAYS * 864e5, path: '/' });
+    startSession(res, user);
     res.json({ user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar } });
 }));
 
-app.post('/api/auth/logout', (req, res) => {
+app.post('/api/auth/logout', wrap(async (req, res) => {
+    // revoga o token no servidor, não só o cookie no navegador
+    try {
+        const { sub } = jwt.verify(req.cookies[COOKIE], JWT_SECRET);
+        await pool.query('UPDATE users SET token_version = token_version + 1 WHERE id = $1', [sub]);
+    } catch { /* sem sessão válida: nada a revogar */ }
     res.clearCookie(COOKIE, { path: '/' });
     res.json({ ok: true });
-});
+}));
 
 app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: { id: req.user.id, name: req.user.name, email: req.user.email, avatar: req.user.avatar } }));
 
@@ -277,12 +293,14 @@ api.put('/users/:id', wrap(async (req, res) => {
     const password = parsePassword(req.body?.password, { required: false });
     const sets = [], values = [];
     for (const [k, v] of Object.entries(data)) { values.push(v); sets.push(`${k} = $${values.length}`); }
-    if (password) { values.push(await bcrypt.hash(password, 12)); sets.push(`password_hash = $${values.length}`); }
+    if (password) { values.push(await bcrypt.hash(password, 12)); sets.push(`password_hash = $${values.length}`, 'token_version = token_version + 1'); }
     if (!sets.length) throw new HttpError(400, 'Nada para atualizar');
     values.push(id);
-    const { rows } = await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING ${USER_COLS}`, values);
+    const { rows } = await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING ${USER_COLS}, token_version`, values);
     if (!rows[0]) throw new HttpError(404, 'Usuário não encontrado');
-    res.json(rows[0]);
+    const { token_version, ...user } = rows[0];
+    if (password && id === req.user.id) startSession(res, { id, token_version }); // quem trocou a própria senha continua logado
+    res.json(user);
 }));
 
 api.delete('/users/:id', wrap(async (req, res) => {

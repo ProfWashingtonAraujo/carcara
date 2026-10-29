@@ -1,3 +1,9 @@
 server
 render.yaml
 README.md
+python
+.github
+.git
+.env
+.env.*
+*.md
