@@ -1375,3 +1375,41 @@ footer {
         transition-delay: 0s !important;
     }
 }
+
+/* Vídeo de fundo em loop no hero */
+.hero-media {
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 0;
+}
+
+.hero-video {
+    height: 100%;
+    object-fit: cover;
+    object-position: 70% 40%;
+    width: 100%;
+}
+
+/* Escurecimento sobre o vídeo mantém o texto legível */
+.hero-media::after {
+    background: linear-gradient(90deg, rgba(8, 24, 39, 0.95) 0%, rgba(15, 41, 71, 0.78) 48%, rgba(15, 41, 71, 0.25) 100%);
+    content: '';
+    inset: 0;
+    position: absolute;
+}
+
+.hero::before,
+.hero-particles {
+    z-index: 1;
+}
+
+.hero::after {
+    z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-video {
+        display: none;
+    }
+}
