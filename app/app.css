@@ -381,3 +381,10 @@ dialog::backdrop { background: rgba(4, 8, 16, .7); backdrop-filter: blur(6px); }
 .export-bar input[type=month] { font: inherit; font-size: .8rem; padding: 6px 10px; border-radius: 10px; border: 1.5px solid var(--glass-border); background: rgba(255, 255, 255, .07); color: var(--text); color-scheme: dark; }
 .export-bar input[type=month]:focus { outline: 0; border-color: var(--orange); }
 .export-bar .btn:disabled { opacity: .6; cursor: progress; }
+
+/* Vídeo de fundo em loop na tela de login */
+.login-media { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.login-video { width: 100%; height: 100%; object-fit: cover; object-position: 70% 40%; }
+.login-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(11, 20, 36, .88), rgba(26, 37, 64, .72) 50%, rgba(42, 29, 26, .8)); }
+.login-card { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) { .login-video { display: none; } }

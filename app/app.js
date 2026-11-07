@@ -835,3 +835,14 @@ $('#calGrid').addEventListener('click', e => {
         }
     }
 })();
+
+// Vídeo da tela de login: tenta iniciar manualmente se o autoplay for adiado
+document.querySelectorAll('.login-video').forEach(function (video) {
+    video.muted = true;
+    var start = function () {
+        var p = video.play();
+        if (p && p.catch) p.catch(function () { /* autoplay bloqueado: mantém o fundo estático */ });
+    };
+    start();
+    document.addEventListener('touchstart', start, { once: true, passive: true });
+});
