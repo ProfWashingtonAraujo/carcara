@@ -408,3 +408,14 @@ function animateNumbers() {
         updateCounter();
     });
 }
+
+// Vídeo do hero: tenta iniciar manualmente se o autoplay for adiado pelo navegador
+document.querySelectorAll('.hero-video').forEach(function (video) {
+    video.muted = true;
+    var start = function () {
+        var p = video.play();
+        if (p && p.catch) p.catch(function () { /* autoplay bloqueado: mantém a foto de fundo */ });
+    };
+    start();
+    document.addEventListener('touchstart', start, { once: true, passive: true });
+});
